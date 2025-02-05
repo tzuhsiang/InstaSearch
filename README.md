@@ -6,7 +6,8 @@ InstaSearch 是一個基於 **Elasticsearch** 的全文檢索系統，提供 **S
 ---
 ### 網站介面
 ![網站介面](images/demo.png)
-
+### ElasticSearch示意資料(Kibana介面)
+![網站介面](images/demo2.png)
 ---
 
 ## 🛠 安裝與設定
