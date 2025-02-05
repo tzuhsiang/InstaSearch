@@ -37,15 +37,7 @@ docker-compose up -d
 ```bash
 curl http://localhost:9200
 ```
-應該返回：
-```json
-{
-  "name": "your-macbook-name",
-  "cluster_name": "elasticsearch",
-  "version": { ... },
-  "tagline": "You Know, for Search"
-}
-```
+
 
 **驗證 Kibana 是否運行：**
 打開瀏覽器並訪問： 👉 [http://localhost:5601](http://localhost:5601)
@@ -112,7 +104,6 @@ print(f"🗑️ 索引 '{index_name}' 已刪除")
 InstaSearch/
 │── data/                      # 本機儲存 Elasticsearch 索引的目錄
 │── docker-compose.yml          # Docker 設定文件
-│── elasticsearch_data/         # Elasticsearch 儲存區（Docker Volume）
 │── src/                        # Python 程式碼目錄
 │   ├── main.py                 # 主要執行檔
 │   ├── search.py               # 搜索功能
@@ -135,21 +126,6 @@ docker-compose down -v
 ```
 然後重新啟動：
 ```bash
-docker-compose up -d
-```
-
-### **2️⃣ 如何確保索引資料不會遺失？**
-請使用 `volumes:` 確保索引資料存放在本機：
-```yaml
-volumes:
-  elasticsearch_data:
-    driver: local
-```
-
-### **3️⃣ 如何完全重置 Elasticsearch？**
-```bash
-docker-compose down -v
-rm -rf data/
 docker-compose up -d
 ```
 
