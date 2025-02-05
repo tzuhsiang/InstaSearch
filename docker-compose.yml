@@ -28,6 +28,3 @@ networks:
   elk:
     driver: bridge
 
-volumes:
-  elasticsearch_data:
-    driver: local
