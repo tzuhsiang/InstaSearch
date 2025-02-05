@@ -1,1 +1,3 @@
-data/*
+# Ignore data
+data/
+!data/.gitkeep  # 保留 data/ 目錄但忽略其中文件
