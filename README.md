@@ -1,27 +1,11 @@
 # 📌 InstaSearch - Elasticsearch + Python 全文檢索專案
 
 ## 🔥 簡介
-InstaSearch 是一個基於 **Elasticsearch** 和 **Kibana** 的全文檢索系統，允許使用 Python 進行文本索引、搜索和管理。此專案適用於學習 **Elasticsearch 搜索技術**，並提供 API 來讀取和處理 IG 文章或其他文本數據。
+InstaSearch 是一個基於 **Elasticsearch** 的全文檢索系統，提供 **Streamlit** 網站介面並進行文本搜索。此專案適用於學習 **Elasticsearch 搜索技術**，並提供Python API 來讀取和處理 IG 文章或其他文本數據。
 
 ---
-
-## 🚀 環境需求
-### **📦 必要條件**
-- **Mac/Linux** (支援 Homebrew)
-- **Docker & Docker Compose**
-- **Python 3.x** (推薦 3.8 以上)
-- **Elasticsearch 8.11.3**
-- **Kibana 8.11.3**
-
-### **🔧 安裝前確認**
-```bash
-# 檢查 Python 版本
-python3 --version
-
-# 檢查 Docker 版本
-docker --version
-docker-compose --version
-```
+### 網站介面
+![網站介面](images/demo.png)
 
 ---
 
