@@ -1,4 +1,4 @@
-# 📌 InstaSearch - Elasticsearch + Kibana + Python 全文檢索專案
+# 📌 InstaSearch - Elasticsearch + Python 全文檢索專案
 
 ## 🔥 簡介
 InstaSearch 是一個基於 **Elasticsearch** 和 **Kibana** 的全文檢索系統，允許使用 Python 進行文本索引、搜索和管理。此專案適用於學習 **Elasticsearch 搜索技術**，並提供 API 來讀取和處理 IG 文章或其他文本數據。
