@@ -24,6 +24,25 @@ services:
     networks:
       - elk
 
+  streamlit:
+    build: ./streamlit_app  # Streamlit 應用的目錄
+    container_name: streamlit
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "8501:8501"
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk
+    volumes:
+      - ./streamlit_app:/app  # 讓本機的 streamlit_app 目錄與容器同步
+      - ./logs:/app/logs  # 📌 把 logs 目錄掛載到本機
+    working_dir: /app  # 設定容器內的工作目錄
+    command: ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+
+
+
 networks:
   elk:
     driver: bridge
