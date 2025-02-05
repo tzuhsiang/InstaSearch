@@ -103,13 +103,10 @@ print(f"🗑️ 索引 '{index_name}' 已刪除")
 ```bash
 InstaSearch/
 │── data/                      # 本機儲存 Elasticsearch 索引的目錄
-│── docker-compose.yml          # Docker 設定文件
-│── src/                        # Python 程式碼目錄
-│   ├── main.py                 # 主要執行檔
-│   ├── search.py               # 搜索功能
-│   ├── insert.py               # 插入文本功能
-│   ├── delete.py               # 刪除功能
-│── README.md                   # 本文件
+│── docker-compose.yml         # Docker 設定文件
+│── streamlit_app/             # Python 程式碼目錄
+│── notebook/                  # ES資料新刪修notebook腳本
+│── README.md                  # 本文件
 ```
 
 ---

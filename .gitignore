@@ -5,3 +5,11 @@ data/*
 !.gitignore
 !data/
 !data/.gitkeep
+
+
+# 忽略 logs 目錄內的所有檔案
+logs/*
+
+# 但保留 logs 目錄本身
+!logs/
+!logs/.gitkeep
