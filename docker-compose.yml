@@ -27,6 +27,8 @@ services:
   streamlit:
     build: ./streamlit_app  # Streamlit 應用的目錄
     container_name: streamlit
+    env_file:
+      - .env/network.env
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     ports:
