@@ -59,7 +59,7 @@ if st.button("搜尋") and es is not None:
 
         try:
             with st.spinner('搜尋中...'):
-                response = es.search(index="text_experiment", body=search_body)
+                response = es.search(index="ig_data", body=search_body)
 
             # 顯示搜尋結果
             hits = response.get("hits", {}).get("hits", [])
@@ -67,7 +67,7 @@ if st.button("搜尋") and es is not None:
             if hits:
                 st.success(f"找到 {len(hits)} 筆結果")
                 for result in hits:
-                    title = result["_source"].get("title", "無標題")
+                    title = result["_source"].get("datetime", "無標題")
                     content = result["_source"].get("content", "無內容")
                     st.subheader(title)
                     st.write(content)
