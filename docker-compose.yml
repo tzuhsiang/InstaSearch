@@ -25,7 +25,13 @@ services:
       - elk
 
   streamlit_search:
-    build: ./streamlit_app  # Streamlit 應用的目錄
+    build:
+      context: ./streamlit_app
+      args:
+        - http_proxy=${http_proxy}
+        - https_proxy=${https_proxy}
+        - HTTP_PROXY=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
     container_name: streamlit
     env_file:
       - .env/network.env
@@ -48,4 +54,3 @@ services:
 networks:
   elk:
     driver: bridge
-
