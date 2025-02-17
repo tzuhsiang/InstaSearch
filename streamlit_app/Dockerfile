@@ -4,6 +4,13 @@ FROM python:3.9-slim
 # 設定工作目錄
 WORKDIR /app
 
+# Set proxy for pip install
+ENV http_proxy="http://10.160.3.88:8080" \
+    https_proxy="http://10.160.3.88:8080" \
+    HTTP_PROXY="http://10.160.3.88:8080" \
+    HTTPS_PROXY="http://10.160.3.88:8080"
+
+
 # 安裝 curl（方便除錯）
 RUN apt-get update && apt-get install -y curl
 
