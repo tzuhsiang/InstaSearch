@@ -2,6 +2,14 @@ import streamlit as st
 from elasticsearch import Elasticsearch
 import time
 import logging
+from datetime import datetime, timedelta
+
+# 設定頁面配置
+st.set_page_config(
+    page_title="Elasticsearch 搜尋介面",
+    layout="wide",  # 使用寬屏布局
+    initial_sidebar_state="expanded"
+)
 
 # 設定 log 格式
 logging.basicConfig(
@@ -40,41 +48,144 @@ else:
     st.error("❌ 無法連接到 Elasticsearch，請檢查服務是否運行中！")
 
 # 設定 Streamlit 介面標題
-st.title("🔍 Elasticsearch 搜尋介面")
+st.title("🔍 IG食記搜尋介面")
 
-# 建立輸入框，讓使用者輸入關鍵字
-query = st.text_input("請輸入搜尋關鍵字", "")
-
-# 當使用者按下搜尋按鈕時執行搜尋
-if st.button("搜尋") and es is not None:
-    if query:
-        # 執行 Elasticsearch 搜尋
-        search_body = {
-            "query": {
-                "match": {
-                    "content": query  # 假設索引中有 "content" 欄位
-                }
-            }
+# 側邊欄搜尋條件
+# 設定側邊欄寬度
+st.markdown(
+    """
+    <style>
+        [data-testid="stSidebar"][aria-expanded="true"] {
+            min-width: 300px;
+            max-width: 300px;
         }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-        try:
-            with st.spinner('搜尋中...'):
-                response = es.search(index="ig_data", body=search_body)
+with st.sidebar:
+    st.subheader("搜尋條件")
+    # 建立輸入框，讓使用者輸入關鍵字
+    query = st.text_input("請輸入搜尋關鍵字", "")
+    
+    # 計算預設的開始日期（一年前）
+    default_start_date = datetime.now().date() - timedelta(days=365)
+    
+    # 日期選擇器
+    start_date = st.date_input("開始日期", value=default_start_date)
+    end_date = st.date_input("結束日期")
+    
+    # 組合日期範圍（使用 ISO 8601 格式）
+    start_datetime = None
+    end_datetime = None
+    if start_date:
+        start_datetime = f"{start_date.isoformat()}T00:00:00+00:00"
+    if end_date:
+        end_datetime = f"{end_date.isoformat()}T23:59:59+00:00"
+    
+    # 搜尋按鈕
+    st.button("搜尋", use_container_width=True, key="search_button")
 
-            # 顯示搜尋結果
-            hits = response.get("hits", {}).get("hits", [])
+# 搜尋邏輯
+if st.session_state.get("search_button") and es is not None:
+        # 重設頁碼
+        st.session_state.current_page = 1
+        if query or start_datetime:
+            # 建立搜尋條件
+            must_conditions = []
             
-            if hits:
-                st.success(f"找到 {len(hits)} 筆結果")
-                for result in hits:
-                    title = result["_source"].get("datetime", "無標題")
-                    content = result["_source"].get("content", "無內容")
-                    st.subheader(title)
-                    st.write(content)
-                    st.markdown("---")  # 分隔線
-            else:
-                st.warning("沒有找到相關結果")
-        except Exception as e:
-            st.error(f"搜尋時發生錯誤: {e}")
+            if query:
+                must_conditions.append({
+                    "match": {
+                        "content": query
+                    }
+                })
+            
+            if start_datetime or end_datetime:
+                date_range = {
+                    "range": {
+                        "datetime": {}
+                    }
+                }
+                if start_datetime:
+                    date_range["range"]["datetime"]["gte"] = start_datetime
+                if end_datetime:
+                    date_range["range"]["datetime"]["lte"] = end_datetime
+                must_conditions.append(date_range)
+
+            # 執行 Elasticsearch 搜尋
+            search_body = {
+                "query": {
+                    "bool": {
+                        "must": must_conditions
+                    }
+                },
+                "sort": [
+                    {"datetime": {"order": "desc"}}  # 從新到舊排序
+                ]
+            }
+
+            try:
+                with st.spinner('搜尋中...'):
+                    response = es.search(
+                        index="ig_data",
+                        body=search_body,
+                        size=10000  # 設定較大的結果數量限制
+                    )
+
+                # 存儲搜尋結果到 session_state
+                st.session_state.search_results = response.get("hits", {}).get("hits", [])
+            except Exception as e:
+                st.error(f"搜尋時發生錯誤: {e}")
+        else:
+            st.error("請至少輸入關鍵字或選擇時間！")
+
+# 初始化頁碼（如果需要）
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = 1
+
+# 顯示搜尋結果（如果存在）
+if hasattr(st.session_state, 'search_results'):
+    hits = st.session_state.search_results
+    if hits:
+        total_hits = len(hits)
+        st.success(f"找到 {total_hits} 筆結果")
+        
+        # 分頁設定
+        items_per_page = 10
+        total_pages = (total_hits + items_per_page - 1) // items_per_page
+        
+        # 分頁導航
+        col1, col2, col3, col4 = st.columns([2, 1, 1, 2])
+        
+        with col1:
+            if st.button("上一頁", disabled=st.session_state.current_page <= 1):
+                st.session_state.current_page -= 1
+                st.rerun()
+        
+        with col2:
+            st.write(f"第 {st.session_state.current_page} 頁")
+        
+        with col3:
+            st.write(f"共 {total_pages} 頁")
+        
+        with col4:
+            if st.button("下一頁", disabled=st.session_state.current_page >= total_pages):
+                st.session_state.current_page += 1
+                st.rerun()
+        
+        # 計算當前頁的資料範圍
+        start_idx = (st.session_state.current_page - 1) * items_per_page
+        end_idx = min(start_idx + items_per_page, total_hits)
+        
+        # 顯示當前頁的資料
+        for result in hits[start_idx:end_idx]:
+            with st.container():
+                title = result["_source"].get("datetime", "無標題")
+                content = result["_source"].get("content", "無內容")
+                st.subheader(title)
+                st.write(content)
+                st.markdown("---")  # 分隔線
     else:
-        st.error("請輸入搜尋關鍵字！")
+        st.warning("沒有找到相關結果")
