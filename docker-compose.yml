@@ -24,7 +24,7 @@ services:
     networks:
       - elk
 
-  streamlit:
+  streamlit_search:
     build: ./streamlit_app  # Streamlit 應用的目錄
     container_name: streamlit
     env_file:
