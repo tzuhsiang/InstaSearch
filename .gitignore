@@ -14,5 +14,5 @@ logs/*
 !logs/
 !logs/.gitkeep
 
-# 但保留 logs 目錄本身
-.env/network.env
+# 但保留 env 目錄本身
+env/network.env
