@@ -34,7 +34,7 @@ services:
         - HTTPS_PROXY=${HTTPS_PROXY}
     container_name: streamlit
     env_file:
-      - .env/network.env
+      - env/network.env
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     ports:
