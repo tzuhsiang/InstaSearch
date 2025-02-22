@@ -3,6 +3,8 @@ from elasticsearch import Elasticsearch
 import time
 import logging
 from datetime import datetime, timedelta
+from PIL import Image, UnidentifiedImageError
+
 
 # 設定頁面配置
 st.set_page_config(
@@ -25,9 +27,9 @@ logger = logging.getLogger(__name__)
 logger.info("✅ 成功初始化 Logging 系統！")
 
 
-
 import os
 es_host = os.getenv("ES_HOST", "http://elasticsearch:9200")  # 預設使用容器內部連線
+
 
 
 # 嘗試連接 Elasticsearch（重試 5 次）
@@ -178,14 +180,48 @@ if hasattr(st.session_state, 'search_results'):
         # 計算當前頁的資料範圍
         start_idx = (st.session_state.current_page - 1) * items_per_page
         end_idx = min(start_idx + items_per_page, total_hits)
-        
+
+
         # 顯示當前頁的資料
         for result in hits[start_idx:end_idx]:
             with st.container():
                 title = result["_source"].get("datetime", "無標題")
                 content = result["_source"].get("content", "無內容")
+                
+                # 讀取圖片路徑，存進清單
+                image_list = []
+                media = result["_source"].get('media', [])
+
+                if media:
+                    for item in media:
+                        # 組合完整的圖片路徑
+                        image_path = item.get('uri', '')
+                        if os.path.exists(image_path):
+                            try:
+                                # 嘗試開啟並驗證圖片檔案是否正常
+                                with Image.open(image_path) as img:
+                                    img.verify()  # verify() 不會回傳圖片，但可驗證檔案是否損壞
+                                image_list.append(image_path)
+                            except UnidentifiedImageError:
+                                st.error(f"無法識別圖片檔案：{image_path}")
+                            except Exception as e:
+                                st.error(f"讀取圖片 {image_path} 時發生錯誤：{e}")
+                        else:
+                            st.error(f"找不到圖片：{image_path}")
+
+
+
+
+
+
                 st.subheader(title)
                 st.write(content)
+                
+                # 若 image_list 不為空，則顯示所有圖片
+                if image_list:
+                    st.image(image_list, width=300)  # 可依需求調整寬度或其他參數
+                
                 st.markdown("---")  # 分隔線
+
     else:
         st.warning("沒有找到相關結果")

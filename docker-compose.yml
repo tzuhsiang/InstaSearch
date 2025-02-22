@@ -46,6 +46,7 @@ services:
     volumes:
       - ./streamlit_app:/app  # 讓本機的 streamlit_app 目錄與容器同步
       - ./logs:/app/logs  # 📌 把 logs 目錄掛載到本機
+      - ./media:/app/media  # 📌 把 logs 目錄掛載到本機
     working_dir: /app  # 設定容器內的工作目錄
     command: ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
 
