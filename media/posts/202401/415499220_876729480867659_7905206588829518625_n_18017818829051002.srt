@@ -1,4 +1,3 @@
-1
-00:00:01,501 --> 00:00:05,681
-怎樣? 才有教我隨便字.
-
+version https://git-lfs.github.com/spec/v1
+oid sha256:4ee4b012c2b4a50f0c0f01d3164bb744166898106b1f5e88a9543d3933a83ca2
+size 64

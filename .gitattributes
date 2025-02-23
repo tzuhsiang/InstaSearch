@@ -1,0 +1,4 @@
+media/** filter=lfs diff=lfs merge=lfs -text
+notebook/es.ipynb filter=lfs diff=lfs merge=lfs -text
+notebook/es_ig.ipynb filter=lfs diff=lfs merge=lfs -text
+notebook/ig_data.json filter=lfs diff=lfs merge=lfs -text
