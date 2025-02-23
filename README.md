@@ -10,7 +10,7 @@ InstaSearch 是一個基於 **Elasticsearch** 的全文檢索系統，提供 **S
 ![網站介面](imgs/demo2.png)
 ---
 
-## 🛠 安裝與設定
+## 安裝與設定
 
 ### **1️⃣ 安裝 Elasticsearch & Kibana**
 **使用 Docker Compose 啟動服務：**
@@ -18,11 +18,15 @@ InstaSearch 是一個基於 **Elasticsearch** 的全文檢索系統，提供 **S
 docker-compose up -d
 ```
 
+## 下載範例IG檔(IG文章、影像、notebooks)
+```bash
+git lfs pull
+```
+
 **驗證 Elasticsearch 是否運行：**
 ```bash
 curl http://localhost:9200
 ```
-
 
 **驗證 Kibana 是否運行：**
 打開瀏覽器並訪問： 👉 [http://localhost:5601](http://localhost:5601)
