@@ -3,11 +3,9 @@ data/*
 !data/.gitkeep
 
 # 忽略 ig_data 目錄內的所有檔案，但保留 ig_data 目錄本身
-ig_data/*.zip
-ig_data/media/*
-ig_data/ig_data.json
+ig_data/*.
+!ig_data/
 !ig_data/.gitkeep
-
 
 # 忽略 media 目錄內的所有檔案，但保留 media 目錄本身
 media/*
