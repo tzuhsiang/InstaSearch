@@ -31,6 +31,7 @@ import os
 es_host = os.getenv("ES_HOST", "http://elasticsearch:9200")  # 預設使用容器內部連線
 
 
+
 # 嘗試連接 Elasticsearch（重試 5 次）
 MAX_RETRIES = 5
 RETRY_INTERVAL = 5  # 每次重試間隔 5 秒
