@@ -1,0 +1,14 @@
+*.jpg
+*.png
+*.gif
+*.webp
+*.mp4
+*.mov
+*.zip
+*.pt
+*.h5
+*.tar.gz
+*.ipynb
+*.srt
+*.json
+.gitattributes
