@@ -24,11 +24,17 @@ services:
     networks:
       - elk
 
-  streamlit:
-    build: ./streamlit_app  # Streamlit 應用的目錄
+  streamlit_search:
+    build:
+      context: ./streamlit_app
+      args:
+        - http_proxy=${http_proxy}
+        - https_proxy=${https_proxy}
+        - HTTP_PROXY=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
     container_name: streamlit
     env_file:
-      - .env/network.env
+      - env/network.env
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     ports:
@@ -40,6 +46,7 @@ services:
     volumes:
       - ./streamlit_app:/app  # 讓本機的 streamlit_app 目錄與容器同步
       - ./logs:/app/logs  # 📌 把 logs 目錄掛載到本機
+      - ./media:/app/media  # 📌 把 logs 目錄掛載到本機
     working_dir: /app  # 設定容器內的工作目錄
     command: ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
 
@@ -48,4 +55,3 @@ services:
 networks:
   elk:
     driver: bridge
-

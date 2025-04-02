@@ -1,8 +1,21 @@
 # 使用官方的 Python 基礎映像檔
 FROM python:3.9-slim
 
+# 接收代理設定的構建參數
+ARG http_proxy
+ARG https_proxy
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+
+# 設定代理環境變數
+ENV http_proxy=$http_proxy \
+    https_proxy=$https_proxy \
+    HTTP_PROXY=$HTTP_PROXY \
+    HTTPS_PROXY=$HTTPS_PROXY
+
 # 設定工作目錄
 WORKDIR /app
+
 
 # 安裝 curl（方便除錯）
 RUN apt-get update && apt-get install -y curl

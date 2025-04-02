@@ -1,18 +1,21 @@
-# 忽略 data 目錄內的所有檔案
+# 忽略 data 目錄內的所有檔案，但保留 data 目錄本身
 data/*
-
-# 但保留 data 目錄本身
-!.gitignore
-!data/
 !data/.gitkeep
 
+# 忽略 ig_data 目錄內的所有檔案，但保留 ig_data 目錄本身
+ig_data/*.zip
+ig_data/media/*
+ig_data/ig_data.json
+!ig_data/.gitkeep
 
-# 忽略 logs 目錄內的所有檔案
+
+# 忽略 media 目錄內的所有檔案，但保留 media 目錄本身
+media/*
+!media/.gitkeep
+
+# 忽略 logs 目錄內的所有檔案，但保留 logs 目錄本身
 logs/*
-
-# 但保留 logs 目錄本身
-!logs/
 !logs/.gitkeep
 
-# 但保留 logs 目錄本身
-.env/network.env
+# 但保留 env 目錄本身
+env/network.env

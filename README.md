@@ -5,12 +5,18 @@ InstaSearch 是一個基於 **Elasticsearch** 的全文檢索系統，提供 **S
 
 ---
 ### 網站介面
-![網站介面](images/demo.png)
+![網站介面](imgs/demo.png)
 ### ElasticSearch示意資料(Kibana介面)
-![網站介面](images/demo2.png)
+![網站介面](imgs/demo2.png)
 ---
 
-## 🛠 安裝與設定
+## 系統要求
+
+- Python 3.7+
+- Docker 與 Docker Compose
+- Git LFS (用於下載範例資料)
+
+## 安裝與設定
 
 ### **1️⃣ 安裝 Elasticsearch & Kibana**
 **使用 Docker Compose 啟動服務：**
@@ -18,68 +24,51 @@ InstaSearch 是一個基於 **Elasticsearch** 的全文檢索系統，提供 **S
 docker-compose up -d
 ```
 
-**驗證 Elasticsearch 是否運行：**
+### **2️⃣ 下載範例IG檔**
+```bash
+git lfs pull
+```
+
+### **3️⃣ 驗證服務狀態**
+
+**檢查 Elasticsearch：**
 ```bash
 curl http://localhost:9200
 ```
 
+**檢查 Kibana：**
+打開瀏覽器訪問： 👉 [http://localhost:5601](http://localhost:5601)
 
-**驗證 Kibana 是否運行：**
-打開瀏覽器並訪問： 👉 [http://localhost:5601](http://localhost:5601)
-
-### **2️⃣ 安裝 Python Elasticsearch 客戶端**
+### **4️⃣ 安裝相依套件**
 ```bash
-pip install elasticsearch
+pip install elasticsearch pandas
 ```
 
-### **3️⃣ 建立索引並插入測試文本**
-```python
-from elasticsearch import Elasticsearch
-import datetime
+---
 
-# 連接 Elasticsearch
-es = Elasticsearch("http://localhost:9200")
+## 使用方法
 
-# 建立索引
-index_name = "text_experiment"
-if es.indices.exists(index=index_name):
-    es.indices.delete(index=index_name)
+### **1️⃣ 資料初始化**
 
-es.indices.create(index=index_name, body={
-    "settings": {"number_of_shards": 1, "number_of_replicas": 0},
-    "mappings": {
-        "properties": {
-            "title": {"type": "text"},
-            "content": {"type": "text"},
-            "tags": {"type": "keyword"},
-            "created_at": {"type": "date"}
-        }
-    }
-})
+專案包含一個強大的`setup.py`腳本，用於處理Instagram資料的導入：
 
-# 插入測試文本
-doc = {
-    "title": "Elasticsearch 測試文檔",
-    "content": "這是一個測試 Elasticsearch 插入與刪除文本的範例。",
-    "tags": ["search", "test"],
-    "created_at": datetime.datetime.now()
-}
-res = es.index(index=index_name, body=doc)
-print(f"✅ 文本已寫入，ID: {res['_id']}")
+1. 將你的Instagram資料壓縮檔放在`ig_data/`目錄下
+2. 執行初始化腳本：
+```bash
+python setup.py
 ```
 
-### **4️⃣ 搜索文本**
-```python
-query = {"query": {"match": {"content": "測試"}}}
-response = es.search(index=index_name, body=query)
-for hit in response["hits"]["hits"]:
-    print(f"📄 {hit['_source']['title']} (ID: {hit['_id']})")
-```
+此腳本會自動：
+- ✅ 解壓縮Instagram資料
+- ✅ 處理文章內容與媒體檔案
+- ✅ 建立Elasticsearch索引
+- ✅ 導入資料至Elasticsearch
+- ✅ 自動整理媒體檔案至正確位置
 
-### **5️⃣ 刪除索引**
-```python
-es.indices.delete(index=index_name)
-print(f"🗑️ 索引 '{index_name}' 已刪除")
+### **2️⃣ 啟動網站介面**
+```bash
+cd streamlit_app
+streamlit run app.py
 ```
 
 ---
@@ -88,28 +77,56 @@ print(f"🗑️ 索引 '{index_name}' 已刪除")
 ```bash
 InstaSearch/
 │── data/                      # 本機儲存 Elasticsearch 索引的目錄
+│── ig_data/                   # Instagram資料目錄
+│── media/                     # 媒體檔案存放目錄
 │── docker-compose.yml         # Docker 設定文件
-│── streamlit_app/             # Python 程式碼目錄
-│── notebook/                  # ES資料新刪修notebook腳本
-│── README.md                  # 本文件
+│── setup.py                   # 資料初始化腳本
+│── streamlit_app/            # Python 程式碼目錄
+│   └── app.py               # Streamlit應用程式
+│── notebook/                 # ES資料新刪修notebook腳本
+│── README.md                # 本文件
 ```
+
+## ⚙️ 系統架構
+
+1. **資料處理流程**
+   - 解壓縮Instagram資料
+   - 處理JSON格式的貼文資料
+   - 整理媒體檔案
+   - 建立Elasticsearch索引
+   - 導入處理後的資料
+
+2. **搜尋功能**
+   - 全文檢索
+   - 時間範圍篩選
+   - 媒體檔案預覽
 
 ---
 
 ## 🛠️ 常見問題
+
 ### **1️⃣ Elasticsearch/Kibana 無法啟動？**
-請檢查是否有其他 Elasticsearch 執行中：
+檢查執行中的容器：
 ```bash
 docker ps | grep elasticsearch
 ```
-如果有舊的容器，請先刪除：
+重置並重啟服務：
 ```bash
 docker-compose down -v
-```
-然後重新啟動：
-```bash
 docker-compose up -d
 ```
+
+### **2️⃣ 資料導入失敗？**
+確認以下幾點：
+- Elasticsearch是否正常運行
+- Instagram資料壓縮檔是否放在正確位置
+- 檢查logs目錄下的錯誤日誌
+
+### **3️⃣ 媒體檔案無法顯示？**
+確認：
+- media目錄存在且有適當的讀取權限
+- 檢查檔案路徑是否正確
+- 確認檔案格式是否支援
 
 ---
 
