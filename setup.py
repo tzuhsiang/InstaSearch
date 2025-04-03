@@ -126,7 +126,7 @@ def import_data_to_elasticsearch(data: List[Dict]):
 def cleanup():
     """清理暫存檔案和目錄"""
     # 搬移媒體檔案
-    selected_subdir = os.path.join(EXTRACT_PATH, "media", "posts")
+    selected_subdir = os.path.join(EXTRACT_PATH, "media")
     if os.path.exists(selected_subdir):
         os.makedirs(MEDIA_DIR, exist_ok=True)
         if os.path.exists(MEDIA_DIR):

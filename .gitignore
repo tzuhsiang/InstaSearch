@@ -3,7 +3,7 @@ data/*
 !data/.gitkeep
 
 # 忽略 ig_data 目錄內的所有檔案，但保留 ig_data 目錄本身
-ig_data/*.
+ig_data/*
 !ig_data/
 !ig_data/.gitkeep
 

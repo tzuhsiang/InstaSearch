@@ -194,11 +194,8 @@ if hasattr(st.session_state, 'search_results'):
 
                 if media:
                     for item in media:
-                        # 從ES中獲取相對路徑
+                        # 組合完整的圖片路徑
                         image_path = item.get('uri', '')
-                        # 將相對路徑轉換為容器內的絕對路徑
-                        if image_path and not image_path.startswith('/'):
-                            image_path = os.path.join('/app', image_path)
                         if os.path.exists(image_path):
                             try:
                                 # 嘗試開啟並驗證圖片檔案是否正常
@@ -211,6 +208,11 @@ if hasattr(st.session_state, 'search_results'):
                                 st.error(f"讀取圖片 {image_path} 時發生錯誤：{e}")
                         else:
                             st.error(f"找不到圖片：{image_path}")
+
+
+
+
+
 
                 st.subheader(title)
                 st.write(content)
