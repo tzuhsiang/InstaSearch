@@ -88,56 +88,6 @@ with st.sidebar:
     
     # 搜尋按鈕
     st.button("搜尋", use_container_width=True, key="search_button")
-    
-    # 在側邊欄底部添加一個spacer推送設定按鈕到底部
-    st.markdown("""<div style='flex-grow: 1'></div>""", unsafe_allow_html=True)
-    
-    # 設定按鈕（在側邊欄最底部）
-    st.button("⋮", key="settings_button", help="上傳Instagram資料", use_container_width=True, 
-             on_click=lambda: setattr(st.session_state, 'show_popup', True))
-
-# 在主區域顯示彈窗
-if st.session_state.get('show_popup', False):
-    with st.form("settings_form", clear_on_submit=True):
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.subheader("🔄 更新Instagram資料")
-            st.markdown("---")
-            
-            uploaded_file = st.file_uploader("請選擇ZIP檔案", type="zip", 
-                                           help="上傳Instagram資料下載的ZIP檔案")
-            
-            if uploaded_file is not None:
-                # 確保ig_data目錄存在
-                ig_data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ig_data")
-                os.makedirs(ig_data_path, exist_ok=True)
-                
-                # 儲存上傳的檔案
-                save_path = os.path.join(ig_data_path, uploaded_file.name)
-                with open(save_path, "wb") as f:
-                    f.write(uploaded_file.getbuffer())
-            
-            btn_col1, btn_col2 = st.columns(2)
-            with btn_col1:
-                if st.form_submit_button("關閉", use_container_width=True):
-                    st.session_state.show_popup = False
-                    st.rerun()
-            with btn_col2:
-                if st.form_submit_button("處理資料", type="primary", use_container_width=True):
-                    with st.spinner('處理資料中...'):
-                        import sys, os
-                        sys.path.append(os.path.dirname(__file__))
-                        import setup
-                        success, error = setup.process_instagram_zip(save_path)
-                        # 處理完成後移除路徑
-                        sys.path.remove(os.path.dirname(__file__))
-                        if success:
-                            st.success("資料處理完成！")
-                            # 關閉彈窗
-                            st.session_state.show_popup = False
-                            st.rerun()
-                        else:
-                            st.error(f"處理失敗：{error}")
 
 # 搜尋邏輯
 if st.session_state.get("search_button") and es is not None:
@@ -244,11 +194,8 @@ if hasattr(st.session_state, 'search_results'):
 
                 if media:
                     for item in media:
-                        # 從ES中獲取相對路徑
+                        # 組合完整的圖片路徑
                         image_path = item.get('uri', '')
-                        # 將相對路徑轉換為容器內的絕對路徑
-                        if image_path and not image_path.startswith('/'):
-                            image_path = os.path.join('/app', image_path)
                         if os.path.exists(image_path):
                             try:
                                 # 嘗試開啟並驗證圖片檔案是否正常
@@ -261,6 +208,11 @@ if hasattr(st.session_state, 'search_results'):
                                 st.error(f"讀取圖片 {image_path} 時發生錯誤：{e}")
                         else:
                             st.error(f"找不到圖片：{image_path}")
+
+
+
+
+
 
                 st.subheader(title)
                 st.write(content)

@@ -3,7 +3,7 @@ data/*
 !data/.gitkeep
 
 # 忽略 ig_data 目錄內的所有檔案，但保留 ig_data 目錄本身
-ig_data/*.
+ig_data/*
 !ig_data/
 !ig_data/.gitkeep
 
@@ -17,3 +17,7 @@ logs/*
 
 # 但保留 env 目錄本身
 env/network.env
+
+# 忽略 streamlit_app 目錄內的IG Data和media資料夾
+streamlit_app/media/*
+streamlit_app/ig_data/*
