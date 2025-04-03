@@ -1,30 +1,26 @@
-# 使用官方的 Python 基礎映像檔
 FROM python:3.9-slim
 
-# 接收代理設定的構建參數
-ARG http_proxy
-ARG https_proxy
-ARG HTTP_PROXY
-ARG HTTPS_PROXY
-
-# 設定代理環境變數
-ENV http_proxy=$http_proxy \
-    https_proxy=$https_proxy \
-    HTTP_PROXY=$HTTP_PROXY \
-    HTTPS_PROXY=$HTTPS_PROXY
-
-# 設定工作目錄
 WORKDIR /app
 
+# 設置大檔案上傳限制
+ENV STREAMLIT_SERVER_MAX_UPLOAD_SIZE=500
 
-# 安裝 curl（方便除錯）
-RUN apt-get update && apt-get install -y curl
+# 首先複製requirements.txt
+COPY requirements.txt .
 
-# 安裝所需的 Python 套件（不事先 COPY，因為我們用 volumes 掛載）
-RUN pip install --no-cache-dir streamlit elasticsearch
+# 安裝依賴
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 開放端口 8501 讓 Streamlit 運行
-EXPOSE 8501
+# 創建必要的目錄並設置權限
+RUN mkdir -p /app/media /app/ig_data /app/logs && \
+    chmod -R 777 /app
 
-# 設定執行指令
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# 複製應用程式檔案
+COPY . .
+
+# 確保所有檔案都有適當的權限
+RUN chmod -R 777 /app && \
+    chmod +x /app/entrypoint.sh
+
+# 運行應用程式
+ENTRYPOINT ["sh", "/app/entrypoint.sh"]

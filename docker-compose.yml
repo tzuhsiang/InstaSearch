@@ -37,6 +37,7 @@ services:
       - env/network.env
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - STREAMLIT_SERVER_MAX_UPLOAD_SIZE=500
     ports:
       - "8501:8501"
     depends_on:
@@ -46,11 +47,11 @@ services:
     volumes:
       - ./streamlit_app:/app  # 讓本機的 streamlit_app 目錄與容器同步
       - ./logs:/app/logs  # 📌 把 logs 目錄掛載到本機
-      - ./media:/app/media  # 📌 把 logs 目錄掛載到本機
+      - ./media:/app/media  # 📌 把 media 目錄掛載到本機
+      - ./ig_data:/app/ig_data  # 📌 把 ig_data 目錄掛載到本機
     working_dir: /app  # 設定容器內的工作目錄
-    command: ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
-
-
+    user: root  # 使用root用戶以確保權限
+    entrypoint: ["sh", "/app/entrypoint.sh"]  # 使用啟動腳本
 
 networks:
   elk:
