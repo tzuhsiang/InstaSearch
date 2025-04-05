@@ -17,14 +17,9 @@ InstaSearch 是一個基於 **Elasticsearch** 的全文檢索系統，提供 **S
 ## 系統要求
 
 - Docker 與 Docker Compose
-- Git LFS (用於下載範例資料)
 
 ## 安裝與設定
 
-### **1️⃣ 下載範例IG檔**
-```bash
-git lfs pull
-```
 
 ### **2️⃣ 啟動所有服務**
 使用 Docker Compose 啟動所有服務（Elasticsearch、Kibana、Streamlit）：
