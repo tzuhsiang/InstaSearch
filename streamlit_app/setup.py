@@ -149,11 +149,16 @@ def process_instagram_data() -> List[Dict]:
             for media_item in media_list:
                 uri = media_item.get("uri", "")
                 if uri:
-                    # 確保路徑以posts開頭
-                    if not uri.startswith("posts/"):
-                        uri = f"posts/{uri}"
-                    # 更新為完整的media路徑
-                    media_item["uri"] = os.path.join("media", uri)
+                    # 提取檔案名稱和日期目錄
+                    parts = uri.split('/')
+                    filename = parts[-1]
+                    date_dir = parts[-2] if len(parts) > 1 else None
+                    
+                    # 組合新的路徑
+                    if date_dir:
+                        media_item["uri"] = os.path.join("media", "posts", date_dir, filename)
+                    else:
+                        media_item["uri"] = os.path.join("media", "posts", filename)
                 processed_media.append(media_item)
                 
             content.append({
@@ -211,6 +216,28 @@ def import_data_to_elasticsearch(data: List[Dict]):
             res = es.index(index=ES_INDEX, body=doc)
             logger.info(f"✅ 文本已寫入，ID: {res['_id']}")
 
+def copy_with_metadata(src: str, dst: str):
+    """複製檔案並保留metadata
+    
+    Args:
+        src: 來源檔案路徑
+        dst: 目標檔案路徑
+    """
+    # 建立目標目錄（如果不存在）
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    
+    # 使用低層級檔案操作以確保更好的控制
+    with open(src, 'rb') as fsrc:
+        with open(dst, 'wb') as fdst:
+            while True:
+                chunk = fsrc.read(1024 * 1024)  # 1MB chunks
+                if not chunk:
+                    break
+                fdst.write(chunk)
+    
+    # 複製檔案權限
+    os.chmod(dst, 0o666)
+
 def cleanup():
     """清理暫存檔案和目錄"""
     # 搬移媒體檔案
@@ -218,35 +245,64 @@ def cleanup():
     posts_dir = os.path.join(media_dir, "posts")
     if os.path.exists(posts_dir):
         try:
-            # 清空或創建目標目錄
-            if os.path.exists(MEDIA_DIR):
-                shutil.rmtree(MEDIA_DIR)
+            # 確保目標目錄存在
             os.makedirs(MEDIA_DIR, exist_ok=True)
             os.chmod(MEDIA_DIR, 0o777)
             
-            # 直接複製整個posts目錄到media目錄
             target_posts_dir = os.path.join(MEDIA_DIR, "posts")
-            logger.info(f"開始複製檔案從 {posts_dir} 到 {target_posts_dir}")
-            shutil.copytree(posts_dir, target_posts_dir)
             
-            # 設置所有複製後檔案的權限
-            for root, dirs, files in os.walk(target_posts_dir):
-                # 設置目錄權限
-                for d in dirs:
-                    dir_path = os.path.join(root, d)
-                    os.chmod(dir_path, 0o777)
-                # 設置檔案權限
-                for f in files:
-                    file_path = os.path.join(root, f)
-                    os.chmod(file_path, 0o666)
-                    
+            # 如果目標目錄已存在，先移除
+            if os.path.exists(target_posts_dir):
+                for root, dirs, files in os.walk(target_posts_dir, topdown=False):
+                    for name in files:
+                        file_path = os.path.join(root, name)
+                        try:
+                            os.chmod(file_path, 0o666)
+                            os.remove(file_path)
+                        except OSError:
+                            pass
+                    for name in dirs:
+                        dir_path = os.path.join(root, name)
+                        try:
+                            os.chmod(dir_path, 0o777)
+                            os.rmdir(dir_path)
+                        except OSError:
+                            pass
+                try:
+                    os.rmdir(target_posts_dir)
+                except OSError:
+                    pass
+            
+            # 建立目標目錄
+            os.makedirs(target_posts_dir, exist_ok=True)
+            os.chmod(target_posts_dir, 0o777)
+            
+            # 複製所有檔案
+            for root, dirs, files in os.walk(posts_dir):
+                # 計算相對路徑
+                rel_path = os.path.relpath(root, posts_dir)
+                target_root = os.path.join(target_posts_dir, rel_path)
+                
+                # 建立目錄
+                os.makedirs(target_root, exist_ok=True)
+                os.chmod(target_root, 0o777)
+                
+                # 複製檔案
+                for file in files:
+                    src_file = os.path.join(root, file)
+                    dst_file = os.path.join(target_root, file)
+                    try:
+                        copy_with_metadata(src_file, dst_file)
+                        logger.debug(f"複製檔案：{src_file} -> {dst_file}")
+                    except Exception as e:
+                        logger.warning(f"複製檔案失敗 {src_file}: {e}")
+                        continue
+            
             logger.info("複製完成並設置權限")
         except Exception as e:
             logger.error(f"移動檔案時發生錯誤: {e}")
-            # 如果發生錯誤，確保目標目錄存在並有正確權限
-            os.makedirs(MEDIA_DIR, exist_ok=True)
-            os.chmod(MEDIA_DIR, 0o777)
             raise
+        
         logger.info(f"📁 資料已搬移到 {MEDIA_DIR} 並設置適當權限")
     
     # 清除暫存
