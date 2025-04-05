@@ -6,8 +6,12 @@ InstaSearch 是一個基於 **Elasticsearch** 的全文檢索系統，提供 **S
 ---
 ### 網站介面
 ![網站介面](imgs/demo.png)
-### ElasticSearch示意資料(Kibana介面)
+
+### 設定頁面(上傳IG資料檔)
 ![網站介面](imgs/demo2.png)
+
+### ElasticSearch示意資料(Kibana介面)
+![網站介面](imgs/demo3.png)
 ---
 
 ## 系統要求
