@@ -20,6 +20,15 @@ media/*
 logs/*
 !logs/.gitkeep
 
+# 忽略 langflow-postgres 目錄內的所有檔案，但保留 langflow-postgres 目錄本身
+langflow-data/*
+!langflow-data/.gitkeep
+
+# 忽略 langflow-redis 目錄內的所有檔案，但保留 langflow-redis 目錄本身
+langflow-postgres/*
+!langflow-postgres/.gitkeep
+
+
 # 但保留 env 目錄本身
 env/network.env
 
