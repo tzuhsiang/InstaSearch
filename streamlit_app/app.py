@@ -86,20 +86,19 @@ with st.sidebar:
 def search_page():
     st.title("🔍 搜尋")
     
-    # 搜尋條件
-    query = st.text_input("請輸入搜尋關鍵字", "")
-    
-    # 日期和搜尋按鈕並排
-    col1, col2, col3 = st.columns([2, 2, 1])
-    
-    with col1:
+    # 日期選擇器
+    date_col1, date_col2 = st.columns(2)
+    with date_col1:
         default_start_date = datetime.now().date() - timedelta(days=365)
         start_date = st.date_input("開始日期", value=default_start_date)
-    
-    with col2:
+    with date_col2:
         end_date = st.date_input("結束日期")
     
-    with col3:
+    # 搜尋條件和按鈕
+    query_col1, query_col2 = st.columns([4, 1])
+    with query_col1:
+        query = st.text_input("請輸入搜尋關鍵字", "")
+    with query_col2:
         search_button = st.button("搜尋", use_container_width=True)
 
     if search_button:
