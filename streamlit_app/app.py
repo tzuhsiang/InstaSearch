@@ -5,13 +5,74 @@ import logging
 from datetime import datetime, timedelta
 from PIL import Image, UnidentifiedImageError
 import os
+import requests
+from dotenv import load_dotenv
+
+def analyze_post_content(content):
+    """使用 Langflow API 分析貼文內容"""
+    api_url = os.getenv("LANGFLOW_API_1")
+    if not api_url:
+        logger.error("未設定 Langflow API")
+        raise ValueError("未設定 Langflow API")
+    
+    try:
+        # 準備請求數據
+        request_data = {'input': content}
+        logger.info(f"發送分析請求到: {api_url}")
+        logger.debug(f"請求內容: {request_data}")
+
+        # 發送請求
+        response = requests.post(
+            api_url,
+            json=request_data,
+            headers={"Content-Type": "application/json"},
+            timeout=30
+        )
+        response.raise_for_status()
+        
+        # 解析響應
+        result = response.json()
+        logger.debug(f"收到響應: {result}")
+
+        # 直接訪問結果路徑
+        try:
+            text_result = result['outputs'][0]['outputs'][0]['results']['text']['text']
+            if not text_result:
+                raise ValueError("API 返回的結果為空")
+            
+            logger.info(f"成功獲取分析結果: {text_result}")
+            return text_result
+            
+        except (KeyError, IndexError, TypeError) as e:
+            logger.error(f"API 響應格式不正確: {str(e)}")
+            logger.error(f"完整響應內容: {result}")
+            return f"無效的 API 響應格式: {str(e)}"
+            
+    except requests.exceptions.RequestException as e:
+        logger.error(f"API 請求錯誤: {str(e)}")
+        return f"無法連接到分析服務: {str(e)}"
+    except Exception as e:
+        logger.error(f"未預期的錯誤: {str(e)}")
+        return f"分析過程發生錯誤: {str(e)}"
+
+# 載入環境變數
+load_dotenv("env/app.env")
+
+# 從環境變數讀取所有 API URL
+langflow_api_1 = os.getenv("LANGFLOW_API_1")  #貼文分析
 
 # 設定頁面配置
 st.set_page_config(
     page_title="IG食記搜尋系統",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        "Get help": None,
+        "Report a bug": None,
+        "About": "IG食記搜尋與分析系統"
+    }
 )
+
 
 # 設定 CSS 樣式
 st.markdown(
@@ -67,6 +128,8 @@ if 'current_page' not in st.session_state:
     st.session_state.current_page = 1
 if 'active_page' not in st.session_state:
     st.session_state.active_page = "搜尋"
+if 'analysis_results' not in st.session_state:
+    st.session_state.analysis_results = {}
 
 def change_page(page):
     st.session_state.active_page = page
@@ -200,23 +263,149 @@ def settings_page():
         ig_data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ig_data")
         os.makedirs(ig_data_path, exist_ok=True)
         
-        # 儲存上傳的檔案
-        save_path = os.path.join(ig_data_path, uploaded_file.name)
-        with open(save_path, "wb") as f:
+        # 建立臨時目錄並儲存檔案
+        os.makedirs(ig_data_path, exist_ok=True)
+        upload_path = os.path.join(ig_data_path, "instagram_data.zip")
+        
+        # 保存上傳的檔案
+        with open(upload_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
+            
+        logger.info(f"已保存上傳檔案到: {upload_path}")
         
         if st.button("處理資料", type="primary"):
             with st.spinner('處理資料中...'):
-                import sys
-                sys.path.append(os.path.dirname(__file__))
-                import setup
-                success, error = setup.process_instagram_zip(save_path)
-                sys.path.remove(os.path.dirname(__file__))
+                try:
+                    # 嘗試在容器路徑中找到 setup.py
+                    import sys
+                    for search_path in [
+                        '/app/setup.py',  # Docker容器中的路徑
+                        os.path.join(os.path.dirname(__file__), '..', 'setup.py'),  # 相對路徑
+                        os.path.join(os.path.dirname(os.path.dirname(__file__)), 'setup.py')  # 絕對路徑
+                    ]:
+                        logger.info(f"嘗試路徑: {search_path}")
+                        if os.path.exists(search_path):
+                            logger.info(f"找到 setup.py: {search_path}")
+                            setup_path = search_path
+                            setup_dir = os.path.dirname(setup_path)
+                            
+                            # 添加到 Python 路徑
+                            if setup_dir not in sys.path:
+                                sys.path.insert(0, setup_dir)
+                                logger.info(f"添加到 Python 路徑: {setup_dir}")
+                            
+                            # 動態加載模組
+                            import importlib.util
+                            spec = importlib.util.spec_from_file_location("setup", setup_path)
+                            setup = importlib.util.module_from_spec(spec)
+                            spec.loader.exec_module(setup)
+                            logger.info("成功載入 setup 模組")
+                            break
+                    else:
+                        raise FileNotFoundError("在所有可能的路徑中都找不到 setup.py")
+                    
+                    # 處理上傳的檔案
+                    success, error = setup.process_instagram_zip(upload_path)
+                    
+                    if success:
+                        st.success("✅ 資料處理完成！")
+                    else:
+                        st.error(f"❌ 處理失敗：{error}")
+                        logger.error(f"處理失敗：{error}")
+                except Exception as e:
+                    error_msg = f"處理過程發生錯誤: {str(e)}"
+                    st.error(f"❌ {error_msg}")
+                    logger.error(error_msg)
+
+    # 顯示當前設定
+    st.subheader("🔗 API 端點設定")
+    st.write("在此設定各個分析功能的 API 端點")
+
+    # 建立設定表單
+    with st.form("api_settings"):
+        # Langflow 基礎 URL
+        base_url = st.text_input(
+            "Langflow 基礎 URL",
+            value=os.getenv("LANGFLOW_URL", "http://langflow:7860"),
+            help="Langflow 服務的基礎 URL"
+        )
+
+        # 對話摘要 API
+        api_1 = st.text_input(
+            "貼文分析 API",
+            value=os.getenv("LANGFLOW_API_1", ""),
+            help="用於貼文分析的 API 端點"
+        )
+        # 儲存按鈕
+        if st.form_submit_button("💾 儲存設定"):
+            try:
+                # 讀取現有的 env 檔案內容
+                try:
+                    with open("env/app.env", "r", encoding="utf-8") as f:
+                        env_content = f.read()
+                except FileNotFoundError:
+                    env_content = ""
                 
-                if success:
-                    st.success("資料處理完成！")
-                else:
-                    st.error(f"處理失敗：{error}")
+                # 更新需要修改的設定
+                lines = env_content.splitlines()
+                new_lines = []
+                langflow_url_updated = False
+                langflow_api_1_updated = False
+                
+                for line in lines:
+                    if line.startswith("LANGFLOW_URL="):
+                        new_lines.append(f'LANGFLOW_URL="{base_url}"')
+                        langflow_url_updated = True
+                    elif line.startswith("LANGFLOW_API_1="):
+                        new_lines.append(f'LANGFLOW_API_1="{api_1}"')
+                        langflow_api_1_updated = True
+                    else:
+                        new_lines.append(line)
+                
+                if not langflow_url_updated:
+                    new_lines.append(f'LANGFLOW_URL="{base_url}"')
+                if not langflow_api_1_updated:
+                    new_lines.append(f'LANGFLOW_API_1="{api_1}"')
+                
+                env_content = "\n".join(new_lines)
+                # 寫入檔案
+                with open("/app/env/app.env", "w", encoding="utf-8") as f:
+                    f.write(env_content)
+                
+                # 重新載入環境變數
+                load_dotenv("/app/env/app.env", override=True)
+                
+                st.success("✅ 設定已成功儲存！")
+                st.info("🔄 請重新整理頁面以套用新設定")
+            except Exception as e:
+                st.error(f"❌ 儲存設定時發生錯誤: {str(e)}")
+
+    # 顯示設定說明
+    with st.expander("ℹ️ 設定說明"):
+        st.markdown("""
+        ### 設定項目說明
+        
+        1. **Langflow 基礎 URL**
+           - Langflow 服務的基本網址
+           - 預設值: `http://langflow:7860`
+        
+        2. **對話摘要 API**
+           - 用於分析並摘要對話內容的 API 端點
+           - 格式: `[基礎 URL]/api/v1/run/[Flow ID]?stream=false`
+        
+        3. **意圖分析 API**
+           - 用於分析對話意圖的 API 端點
+           - 格式: `[基礎 URL]/api/v1/run/[Flow ID]?stream=false`
+        
+        4. **情緒分析 API**
+           - 用於分析對話情緒的 API 端點
+           - 格式: `[基礎 URL]/api/v1/run/[Flow ID]?stream=false`
+        
+        ### 注意事項
+        - 修改設定後需要重新整理頁面才會生效
+        - 請確保輸入的 API 端點格式正確
+        - Flow ID 可以從 Langflow 介面中獲取
+        """)
 
 def display_results(hits):
     # 分頁設定
@@ -270,11 +459,50 @@ def display_results(hits):
                         except Exception as e:
                             logger.error(f"讀取圖片 {image_path} 時發生錯誤：{e}")
 
-            st.subheader(title)
-            st.write(content)
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.subheader(title)
+                st.write(content)
+                
+                if image_list:
+                    st.image(image_list, width=300)
             
-            if image_list:
-                st.image(image_list, width=300)
+            with col2:
+                result_key = f"analyze_{title}"
+                
+                # 定義切換函數
+                def toggle_analysis(key):
+                    if f"show_{key}" not in st.session_state:
+                        st.session_state[f"show_{key}"] = True
+                    else:
+                        st.session_state[f"show_{key}"] = not st.session_state[f"show_{key}"]
+                
+                # 顯示分析按鈕
+                if st.button(
+                    "🤖 貼文分析" if not st.session_state.get(f"show_{result_key}", False) else "🤖 隱藏分析",
+                    key=f"btn_{result_key}",
+                    on_click=toggle_analysis,
+                    args=(result_key,),
+                    use_container_width=True
+                ):
+                    pass  # 按鈕點擊事件由 on_click 處理
+
+                # 如果狀態為顯示，則進行分析並顯示結果
+                if st.session_state.get(f"show_{result_key}", False):
+                    analysis_container = st.container()
+                    with analysis_container:
+                        if result_key not in st.session_state:
+                            with st.spinner("分析中..."):
+                                try:
+                                    result = analyze_post_content(content)
+                                    st.session_state[result_key] = result
+                                except Exception as e:
+                                    st.error(f"分析失敗: {str(e)}")
+                                    st.session_state[f"show_{result_key}"] = False
+                                    st.rerun()
+                        
+                        st.info("AI 分析結果", icon="🤖")
+                        st.write(st.session_state[result_key])
             
             st.markdown("---")
 
