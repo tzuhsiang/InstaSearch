@@ -73,21 +73,59 @@ def init_elasticsearch():
 
 def call_langflow_api(api_url, text):
     """調用 Langflow API"""
+    logger.info(f"正在呼叫 API：{api_url}")
+    logger.debug(f"發送內容：{text[:100]}...")  # 只記錄前100個字元
+    
     headers = {"Content-Type": "application/json"}
-    data={"input_value": text}
-    response=requests.post(api_url, headers=headers, json=data)
-    content=response.json()
-    result=content["outputs"][0]["outputs"][0]["results"]["message"]["text"]
-    return result
+    data = {"input": text}  # API期望的格式
+    
+    try:
+        response = requests.post(api_url, headers=headers, json=data, timeout=30)
+        response.raise_for_status()  # 檢查HTTP狀態碼
+        content = response.json()
+        
+        # 嘗試獲取結果
+        if "outputs" in content and content["outputs"]:
+            try:
+                result = content["outputs"][0]["outputs"][0]["results"]["message"]["text"]
+                logger.info("API 調用成功")
+                return result
+            except (KeyError, IndexError) as e:
+                error_msg = f"無效的 API 響應格式: {str(e)}"
+                logger.error(f"{error_msg}, 響應內容: {content}")
+                raise ValueError(error_msg)
+        else:
+            error_msg = "API 響應中沒有輸出內容"
+            logger.error(f"{error_msg}, 響應內容: {content}")
+            raise ValueError(error_msg)
+            
+    except requests.exceptions.RequestException as e:
+        error_msg = f"API 請求失敗: {str(e)}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+    except Exception as e:
+        error_msg = f"未預期的錯誤: {str(e)}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
 
 def analyze_post_content(content):
     """分析貼文內容"""
     api_url = os.getenv("LANGFLOW_API_1")
     if not api_url:
-        raise ValueError("未設定 Langflow API")
+        error_msg = "未設定 Langflow API"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
     
-    result = call_langflow_api(api_url, content)
-    return result
+    logger.info("開始分析貼文內容")
+    
+    try:
+        result = call_langflow_api(api_url, content)
+        logger.info("分析完成")
+        return result
+    except Exception as e:
+        error_msg = f"分析失敗: {str(e)}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
 
 def init_session_state():
     """初始化 session state"""
@@ -171,60 +209,44 @@ def display_search_result(result):
     
     st.markdown("---")
 
-def display_analysis_button(title, content):
+def display_analysis_button(title: str, content: str):
     """顯示分析按鈕和結果"""
-    # 使用標題作為唯一標識符
-    state_key = f"state_{title}"
-    button_key = f"btn_{title}"
-    result_key = f"result_{title}"
+    # 使用唯一的狀態鍵
+    state_key = f"btn_state_{title}"
     
-    # 初始化session state
+    # 初始化狀態
     if state_key not in st.session_state:
-        st.session_state[state_key] = False
-    if result_key not in st.session_state:
-        st.session_state[result_key] = None
+        st.session_state[state_key] = {
+            'show': False,
+            'result': None
+        }
+    state = st.session_state[state_key]
     
-    # 建立多個顯示容器
-    status_container = st.empty()
-    result_container = st.empty()
+    # 建立容器以保持內容穩定
+    result_placeholder = st.empty()
     
-    # 顯示按鈕並更新狀態
-    btn_text = "🤖 隱藏分析" if st.session_state[state_key] else "🤖 貼文分析"
-    if st.button(btn_text, key=button_key, use_container_width=True):
-        logger.info(f"按鈕被點擊：{button_key}")  # 記錄按鈕點擊
-        
-        # 更新顯示狀態
-        if not st.session_state[state_key]:  # 如果要顯示分析
-            st.session_state[result_key] = None  # 重置結果
-            st.session_state[state_key] = True
-            status_container.warning("收到分析任務，開始處理...")
-        else:  # 如果要隱藏分析
-            st.session_state[state_key] = False
-            status_container.empty()
-            result_container.empty()
-            return
-    
-    # 處理分析結果的顯示
-    if st.session_state[state_key]:
-        if st.session_state[result_key] is None:
-            logger.info(f"開始分析內容：{content[:100]}...")  # 記錄開始分析
-            try:
-                with st.spinner(""):  # 使用空的spinner避免重複的loading訊息
+    # 顯示按鈕
+    btn_text = "🤖 隱藏分析" if state['show'] else "🤖 貼文分析"
+    if st.button(btn_text, key=f"btn_{title}", use_container_width=True):
+        if not state['show']:  # 如果按下按鈕要顯示分析
+            # 啟動分析
+            with st.spinner("分析中..."):
+                try:
                     result = analyze_post_content(content)
-                    st.session_state[result_key] = result
-                    logger.info("分析完成")  # 記錄分析完成
-                    status_container.empty()  # 清除狀態訊息
-            except Exception as e:
-                error_msg = f"分析失敗: {str(e)}"
-                logger.error(error_msg)  # 記錄錯誤
-                st.session_state[result_key] = error_msg
-                status_container.error(error_msg)
-        
-        # 顯示分析結果
-        with result_container:
-            if st.session_state[result_key]:
-                st.info("AI 分析結果", icon="🤖")
-                st.write(st.session_state[result_key])
+                    state['result'] = result
+                    state['show'] = True
+                except Exception as e:
+                    state['result'] = f"分析失敗: {str(e)}"
+                    state['show'] = True
+        else:  # 如果是要隱藏分析
+            state['show'] = False
+            result_placeholder.empty()
+            
+    # 顯示結果
+    if state['show'] and state['result']:
+        with result_placeholder:
+            st.info("AI 分析結果", icon="🤖")
+            st.write(state['result'])
 
 def search_page(es):
     """搜尋頁面"""
