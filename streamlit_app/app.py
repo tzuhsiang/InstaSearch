@@ -86,10 +86,7 @@ def analyze_post_content(content):
     if not api_url:
         raise ValueError("未設定 Langflow API")
     
-    result, error = call_langflow_api(api_url, content)
-    if error:
-        logger.error(error)
-        return f"分析失敗: {error}"
+    result = call_langflow_api(api_url, content)
     return result
 
 def init_session_state():
