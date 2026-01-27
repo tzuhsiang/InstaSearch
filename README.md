@@ -1,137 +1,122 @@
-# 📌 InstaSearch - Elasticsearch + Python 全文檢索專案
+# 📌 InstaSearch - 現代化 AI 全文檢索與分析平台
 
-## 🔥 簡介
-InstaSearch 是一個基於 **Elasticsearch** 的全文檢索系統，提供 **Streamlit** 網站介面並進行文本搜索。此專案適用於學習 **Elasticsearch 搜索技術**，並提供Python API 來讀取和處理 IG 文章或其他文本數據。
+[![Vue.js](https://img.shields.io/badge/Vue.js-3.0-4FC08D?style=flat&logo=vue.js)](https://vuejs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Elasticsearch](https://img.shields.io/badge/Elasticsearch-8.11-005571?style=flat&logo=elasticsearch)](https://www.elastic.co/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker)](https://www.docker.com/)
 
----
-### 網站介面
-![網站介面](imgs/demo.png)
+**InstaSearch** 是一個現代化的全端應用程式，結合了 **Elasticsearch** 全文檢索、**FastAPI** 後端服務與 **Vue.js** 高質感前端介面。
+本專案不僅提供 Instagram 貼文的搜尋功能，更整合了 **Langflow** 與 **MCP Server** 架構，支援 AI 貼文分析與智慧對話代理 (AI Agent)。
 
-### 設定頁面(上傳IG資料檔)
-![網站介面](imgs/demo2.png)
+## 🚀 主要特色
 
-### ElasticSearch示意資料(Kibana介面)
-![網站介面](imgs/demo3.png)
----
-
-## 系統要求
-
-- Docker 與 Docker Compose
-
-## 安裝與設定
-
-
-### **2️⃣ 啟動所有服務**
-使用 Docker Compose 啟動所有服務（Elasticsearch、Kibana、Streamlit）：
-```bash
-docker compose up -d
-```
-
-此命令會啟動：
-- Elasticsearch (http://localhost:9200)
-- Kibana (http://localhost:5601)
-- Streamlit 應用程式 (http://localhost:8501)
-
-### **3️⃣ 驗證服務狀態**
-
-**檢查 Elasticsearch：**
-```bash
-curl http://localhost:9200
-```
-
-**檢查 Kibana：**
-打開瀏覽器訪問： 👉 [http://localhost:5601](http://localhost:5601)
-
-**檢查 Streamlit：**
-打開瀏覽器訪問： 👉 [http://localhost:8501](http://localhost:8501)
+- **🎨 現代化 UI 設計**: 採用 Glassmorphism (玻璃擬態) 風格，提供流暢的深色模式體驗。
+- **🔍 強大搜尋引擎**: 基於 Elasticsearch 的高效全文檢索，支援關鍵字與日期範圍篩選。
+- **📊 數據可視化**: 內建互動式圖表，自動分析發文趨勢。
+- **🤖 AI 智能分析**:
+  - **貼文分析**: 整合 Langflow，可針對單篇貼文進行深度內容分析。
+  - **AI Agent**: 內建聊天室介面，支援透過 MCP 協議與後端 AI Agent 互動 (需自行配置 Langflow Agent)。
+- **🐳 完整容器化**: 使用 Docker Compose 一鍵部署所有服務 (Frontend, Backend, DB, AI Engine)。
 
 ---
 
-## 使用方法
+## 🛠️ 系統架構
 
-### **1️⃣ 資料處理**
+本專案採用前後端分離架構：
 
-專案包含一個完整的資料處理流程，用於處理 Instagram 資料的導入：
+1.  **Frontend**: Vue 3 + Vite + Vanilla CSS (Glassmorphism)
+2.  **Backend**: FastAPI + Python
+3.  **Database**: Elasticsearch (搜尋引擎) + PostgreSQL (Langflow 資料庫)
+4.  **AI Engine**: Langflow (LLM 流程編排)
+5.  **Infrastructure**: Docker Compose
 
-1. 將你的 Instagram 資料壓縮檔放在 `ig_data/` 目錄下
-2. 系統會自動：
-   - ✅ 解壓縮 Instagram 資料
-   - ✅ 處理文章內容與媒體檔案
-   - ✅ 建立 Elasticsearch 索引
-   - ✅ 導入資料至 Elasticsearch
-   - ✅ 自動整理媒體檔案至正確位置
+## 📂 專案結構
 
-### **2️⃣ 使用網站介面**
-直接訪問 http://localhost:8501 即可使用搜尋功能
-
----
-
-## 📌 專案結構
 ```bash
 InstaSearch/
-│── data/                      # 本機儲存 Elasticsearch 索引的目錄
-│── ig_data/                   # Instagram資料目錄
-│── media/                     # 媒體檔案存放目錄
-│── docker-compose.yml         # Docker 設定文件
-│── streamlit_app/            # Streamlit 應用程式目錄
-│   ├── app.py               # Streamlit 應用程式主程式
-│   ├── setup.py             # 資料處理腳本
-│   └── Dockerfile          # Streamlit 容器設定
-│── notebook/                 # ES資料新刪修notebook腳本
-│── README.md                # 本文件
+│── backend/                # [NEW] FastAPI 後端服務
+│   ├── main.py             # 應用程式入口
+│   ├── routers/            # API 路由 (search, analysis, settings, mcp)
+│   ├── database.py         # DB 連線邏輯
+│   └── Dockerfile
+│
+│── frontend/               # [NEW] Vue.js 前端應用
+│   ├── src/
+│   │   ├── views/          # 頁面組件 (Search, Analysis, Agent...)
+│   │   ├── components/     # 共用組件
+│   │   └── style.css       # 全域樣式設定
+│   └── Dockerfile
+│
+│── data/                   # Elasticsearch 資料持久化目錄
+│── ig_data/                # Instagram 匯入的原始資料
+│── media/                  # 媒體檔案目錄
+│── langflow-data/          # Langflow 設定檔
+│── docker-compose.yml      # 服務編排設定
+└── spec.md                 # 開發規格書
 ```
 
-## ⚙️ 系統架構
+---
 
-1. **容器化服務**
-   - Elasticsearch：資料儲存和搜尋引擎
-   - Kibana：資料視覺化和管理介面
-   - Streamlit：使用者介面和搜尋功能
+## 🚀 快速開始
 
-2. **資料處理流程**
-   - 檔案系統處理：自動處理跨容器的檔案操作
-   - 智能路徑處理：確保媒體檔案路徑正確
-   - 自動權限管理：確保容器間的檔案存取權限
-   - Elasticsearch 整合：自動建立索引和導入資料
+### 1️⃣ 前置需求
+- 安裝 [Docker](https://www.docker.com/) 與 Docker Compose
 
-3. **搜尋功能**
-   - 全文檢索
-   - 時間範圍篩選
-   - 媒體檔案預覽
+### 2️⃣ 啟動服務
+在專案根目錄下執行：
+
+```bash
+docker-compose up --build
+```
+
+系統將自動啟動以下服務：
+- **Frontend**: [http://localhost:3000](http://localhost:3000) (主要操作介面)
+- **Backend API**: [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI)
+- **Langflow**: [http://localhost:7860](http://localhost:7860) (AI 流程編排)
+- **Kibana**: [http://localhost:5601](http://localhost:5601) (資料儀表板)
+- **Elasticsearch**: [http://localhost:9200](http://localhost:9200)
+
+### 3️⃣ 資料匯入
+若您有 Instagram 備份資料 (ZIP 格式)，請將其放入 `ig_data/` 目錄。
+後端服務啟動時會自動掛載此目錄，您可透過相關腳本 (如 `setup.py` 或 API) 來觸發資料匯入 (需視具體實作而定)。
+
+---
+
+## 📖 使用指南
+
+### 🔍 搜尋頁面
+- 輸入關鍵字或選擇日期範圍進行搜尋。
+- 支援查看貼文內容、分數 (Score) 與圖片預覽。
+- 點擊卡片上的「🤖 貼文分析」按鈕，即可呼叫後端 AI 進行內容解析 (需先在設定頁面配置 API)。
+
+### 📊 分析頁面
+- 自動讀取 Elasticsearch 數據，展示每月的發文數量趨勢圖。
+
+### 💬 AI Agent
+- 提供一個聊天介面，預設整合 MCP Server 協議。
+- 需在 Langflow 中建立對應的 Agent Flow，並確保後端已正確連線。
+
+### ⚙️ 系統設置
+- 設定 Langflow 的 Base URL 與相關 API Endpoint。
+- 設定將儲存於 `env/app.env`，並熱重載後端環境變數。
 
 ---
 
 ## 🛠️ 常見問題
 
-### **1️⃣ 服務無法啟動？**
-檢查執行中的容器：
-```bash
-docker ps
-```
-重置並重啟服務：
-```bash
-docker compose down -v
-docker compose up -d
-```
+### Q: 服務啟動後前端顯示 "Network Error"？
+**A:** 請確認後端容器 (`backend`) 是否已成功啟動且無錯誤。前端預設透過 Proxy `/api` 連線至後端，請確保 Docker Network 設定正確。
 
-### **2️⃣ 資料導入失敗？**
-確認以下幾點：
-- 檢查容器日誌：
-  ```bash
-  docker compose logs streamlit_search
-  ```
-- 確認 `ig_data` 目錄中有正確的 ZIP 檔案
-- 檢查 `logs` 目錄下的錯誤日誌
+### Q: 如何設定 AI 分析功能？
+**A:**
+1. 進入 Langflow ([http://localhost:7860](http://localhost:7860)) 建立 Flow。
+2. 取得 Flow 的 API Endpoint。
+3. 在 InstaSearch 前端的「系統設置」頁面填入該 API URL。
 
-### **3️⃣ 媒體檔案無法顯示？**
-確認：
-- 檢查容器掛載目錄的權限
-- 確認檔案路徑格式是否正確（應為 /app/media/posts/[date]/[filename]）
-- 重新執行資料處理流程
+### Q: 圖片無法顯示？
+**A:** 請確認 `ig_data` 或 `media` 資料夾權限正確，且圖片路徑與資料庫中的 `uri` 欄位一致。後端已設定靜態檔案掛載，可直接透過 `/images/...` 存取。
 
 ---
 
-## 📢 聯絡作者
-如果你有任何問題或改進建議，請聯絡 [你的 GitHub](https://github.com/yourname)！
-
-🚀 **快來試試 Elasticsearch 的強大全文檢索功能吧！**
+## 📧 聯絡
+如有任何問題，歡迎提交 Issue 或 Pull Request。

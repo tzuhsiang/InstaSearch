@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+elasticsearch
+pydantic
+python-dotenv
+requests
+pillow
+mcp
+sse-starlette
+python-multipart
