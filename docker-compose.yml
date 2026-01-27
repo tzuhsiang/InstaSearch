@@ -34,10 +34,10 @@ services:
         - HTTPS_PROXY=${HTTPS_PROXY}
     container_name: streamlit
     env_file:
-      - env/network.env
+      - env/app.env
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - STREAMLIT_SERVER_MAX_UPLOAD_SIZE=500
+      - STREAMLIT_SERVER_MAX_UPLOAD_SIZE=1000
     ports:
       - "8501:8501"
     depends_on:
@@ -49,6 +49,7 @@ services:
       - ./logs:/app/logs  # 📌 把 logs 目錄掛載到本機
       - ./media:/app/media  # 📌 把 media 目錄掛載到本機
       - ./ig_data:/app/ig_data  # 📌 把 ig_data 目錄掛載到本機
+      - ./setup.py:/app/setup.py  # 📌 掛載 setup.py 到容器
     working_dir: /app  # 設定容器內的工作目錄
     user: root  # 使用root用戶以確保權限
     entrypoint: ["sh", "/app/entrypoint.sh"]  # 使用啟動腳本
@@ -63,7 +64,7 @@ services:
       - LANGFLOW_DATABASE_URL=postgresql://langflow:langflow@postgres:5432/langflow
       - LANGFLOW_CONFIG_DIR=/var/lib/langflow
     env_file:
-      - ./env/network.env
+      - env/app.env
     volumes:
       - ./langflow-data:/var/lib/langflow
     networks:
