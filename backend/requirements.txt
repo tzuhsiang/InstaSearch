@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-elasticsearch
+elasticsearch<9.0.0
 pydantic
 python-dotenv
 requests

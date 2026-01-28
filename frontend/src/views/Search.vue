@@ -1,11 +1,17 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import axios from 'axios'
 import { Search, Loader2, Bot, Calendar } from 'lucide-vue-next'
 
+// 預設時間範圍：最近兩年
+const now = new Date()
+const twoYearsAgo = new Date()
+twoYearsAgo.setFullYear(now.getFullYear() - 2)
+const formatDate = (date) => date.toISOString().split('T')[0]
+
 const query = ref('')
-const startDate = ref('')
-const endDate = ref('')
+const startDate = ref(formatDate(twoYearsAgo))
+const endDate = ref(formatDate(now))
 const page = ref(1)
 const results = ref([])
 const total = ref(0)
@@ -13,8 +19,11 @@ const loading = ref(false)
 const analyzing = ref(null)
 const analysisResult = ref({})
 
+const error = ref(null)
+
 const search = async () => {
     loading.value = true
+    error.value = null
     try {
         const params = {
             q: query.value,
@@ -24,11 +33,16 @@ const search = async () => {
             end_date: endDate.value || undefined
         }
 
-        const res = await axios.get('/api/search', { params })
+        const res = await axios.get('/api/search/', { params })
+        console.log('Search response:', res.data)
         results.value = res.data.results
         total.value = res.data.total
     } catch (e) {
-        console.error(e)
+        console.error('Search error:', e)
+        error.value = e.message || '發生錯誤，請稍後再試'
+        if (e.response) {
+             error.value += ` (${e.response.status}: ${JSON.stringify(e.response.data)})`
+        }
     } finally {
         loading.value = false
     }
@@ -47,6 +61,10 @@ const analyzePost = async (post) => {
 }
 
 watch(page, search)
+
+onMounted(() => {
+    search()
+})
 </script>
 
 <template>
@@ -74,8 +92,12 @@ watch(page, search)
         <Loader2 class="animate-spin" size="48" style="color: var(--accent-primary)" />
     </div>
 
-    <div v-else-if="results.length === 0 && query" class="empty-state">
+    <div v-else-if="results.length === 0 && query && !error" class="empty-state">
         <p>沒有找到相關結果</p>
+    </div>
+
+    <div v-else-if="error" class="glass-panel p-6 mb-8" style="color: var(--danger); text-align: center;">
+        <p>{{ error }}</p>
     </div>
 
     <div v-else class="results-grid">
