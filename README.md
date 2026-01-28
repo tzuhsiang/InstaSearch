@@ -85,7 +85,8 @@ docker-compose up --build
 ## 📖 使用指南
 
 ### 🔍 搜尋頁面
-- 輸入關鍵字或選擇日期範圍進行搜尋。
+- **自動搜尋**：進入頁面時，系統會自動載入最近 **兩年** 的資料。
+- 支援輸入關鍵字自訂搜尋範圍。
 - 支援查看貼文內容、分數 (Score) 與圖片預覽。
 - 點擊卡片上的「🤖 貼文分析」按鈕，即可呼叫後端 AI 進行內容解析 (需先在設定頁面配置 API)。
 
@@ -105,7 +106,21 @@ docker-compose up --build
 ## 🛠️ 常見問題
 
 ### Q: 服務啟動後前端顯示 "Network Error"？
-**A:** 請確認後端容器 (`backend`) 是否已成功啟動且無錯誤。前端預設透過 Proxy `/api` 連線至後端，請確保 Docker Network 設定正確。
+**A:** 
+1. 請確認後端容器 (`backend`) 是否已成功啟動且無錯誤。
+2. 檢查 API 呼叫是否包含結尾斜線（FastAPI Redirect 機制可能導致 Docker 內部 IP 暴露問題），例如應使用 `/api/search/` 而非 `/api/search`。
+
+### Q: Elasticsearch 回傳 503 或 "Cluster Block Exception"？
+**A:** 這通常是因為 Docker Host 磁碟空間不足（>95% 使用率），導致 Elasticsearch 觸發 Flood Stage Protection 並強制鎖定為唯讀。
+**解決方案**：
+1. 清理 Docker 暫存：`docker system prune -a`
+2. 解除索引鎖定：
+   ```bash
+   curl -X PUT "localhost:9200/_all/_settings" -H 'Content-Type: application/json' -d '{"index.blocks.read_only_allow_delete": null}'
+   ```
+
+### Q: Backend 報錯 "Elasticsearch client version incompatibility"？
+**A:** 專案已鎖定 `elasticsearch<9.0.0` 以相容 v8 伺服器。若自行重建環境，請確保不要安裝 v9 以上的 Python client。
 
 ### Q: 如何設定 AI 分析功能？
 **A:**
