@@ -57,16 +57,23 @@ async def handle_call_tool(
 
 sse = SseServerTransport("/api-mcp/messages")
 
-async def sse_app(scope, receive, send):
-    async with sse.connect_sse(scope, receive, send) as streams:
+from starlette.responses import Response
+
+class EmptyResponse(Response):
+    async def __call__(self, scope, receive, send):
+        pass
+
+@router.get("/sse")
+async def handle_sse(request: Request):
+    async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
         await server.run(
             streams[0],
             streams[1],
             server.create_initialization_options()
         )
+    return EmptyResponse()
 
-async def messages_app(scope, receive, send):
-    await sse.handle_post_message(scope, receive, send)
-
-router.mount("/sse", sse_app)
-router.mount("/messages", messages_app)
+@router.post("/messages")
+async def handle_messages(request: Request):
+    await sse.handle_post_message(request.scope, request.receive, request._send)
+    return EmptyResponse()

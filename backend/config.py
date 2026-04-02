@@ -10,11 +10,22 @@ AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "")
 AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-05-01-preview")
 AZURE_DEPLOYMENT_NAME = os.getenv("AZURE_DEPLOYMENT_NAME", "gpt-4o") # default
 
-# MCP Server 路由
-MCP_SERVERS_DICT = {
-    "instagram": "http://127.0.0.1:8000/mcp/sse",
-    "system_api": "http://127.0.0.1:8000/api-mcp/sse"
-}
+import json
+
+mcp_servers_path = os.path.join(os.path.dirname(__file__), "mcp_servers.json")
+MCP_SERVERS_DICT = {}
+try:
+    with open(mcp_servers_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+        for name, info in data.get("servers", {}).items():
+            if "url" in info:
+                MCP_SERVERS_DICT[name] = info["url"]
+except Exception as e:
+    # 預設 Fallback
+    MCP_SERVERS_DICT = {
+        "instagram": "http://127.0.0.1:8000/mcp/sse",
+        "system_api": "http://127.0.0.1:8000/api-mcp/sse"
+    }
 
 # 預設推薦問題設定
 default_sugg_str = os.getenv(
