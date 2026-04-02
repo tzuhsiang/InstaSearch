@@ -6,16 +6,17 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker)](https://www.docker.com/)
 
 **InstaSearch** 是一個現代化的全端應用程式，結合了 **Elasticsearch** 全文檢索、**FastAPI** 後端服務與 **Vue.js** 高質感前端介面。
-本專案不僅提供 Instagram 貼文的搜尋功能，更整合了 **Langflow** 與 **MCP Server** 架構，支援 AI 貼文分析與智慧對話代理 (AI Agent)。
+本專案提供 Instagram 食記貼文的搜尋與趨勢分析功能，並整合了 **LangGraph** 與 **MCP Server** 架構，內建一個能夠自主分析、呼叫查詢工具的強大 AI Agent 助理。
 
 ## 🚀 主要特色
 
 - **🎨 現代化 UI 設計**: 採用 Glassmorphism (玻璃擬態) 風格，提供流暢的深色模式體驗。
 - **🔍 強大搜尋引擎**: 基於 Elasticsearch 的高效全文檢索，支援關鍵字與日期範圍篩選。
 - **📊 數據可視化**: 內建互動式圖表，自動分析發文趨勢。
-- **🤖 AI 智能分析**:
-  - **貼文分析**: 整合 Langflow，可針對單篇貼文進行深度內容分析。
-  - **AI Agent**: 內建聊天室介面，支援透過 MCP 協議與後端 AI Agent 互動 (需自行配置 Langflow Agent)。
+- **🤖 AI Agent 助理**:
+  - **多智能體協作**: 整合 LangGraph，由 `Supervisor`、`Retriever` 等不同角色的 AI 工具組建而成的多代理架構。
+  - **MCP 協議支援**: 後端內建 `instagram` (資料庫查詢) 與 `system_api` (趨勢查詢) 等基礎設施等級的延伸工具。
+  - **即時串流對話**: 提供獨立的 Agent 測試頁面與完善的 Vue 前端聊天介面，支援思考過程 (Reasoning) 可視化。
 - **🐳 完整容器化**: 使用 Docker Compose 一鍵部署所有服務 (Frontend, Backend, DB, AI Engine)。
 
 ---
@@ -24,10 +25,10 @@
 
 本專案採用前後端分離架構：
 
-1.  **Frontend**: Vue 3 + Vite + Vanilla CSS (Glassmorphism)
-2.  **Backend**: FastAPI + Python
-3.  **Database**: Elasticsearch (搜尋引擎) + PostgreSQL (Langflow 資料庫)
-4.  **AI Engine**: Langflow (LLM 流程編排)
+1.  **Frontend**: Vue 3 + Vite + Tailwind/Vanilla CSS 
+2.  **Backend**: FastAPI + Python (內植 MCP Server)
+3.  **Database**: Elasticsearch (搜尋引擎與原始資料庫)
+4.  **AI Engine**: LangGraph (LLM 邏輯與多代理人編排)
 5.  **Infrastructure**: Docker Compose
 
 ## 📂 專案結構
@@ -50,7 +51,6 @@ InstaSearch/
 │── data/                   # Elasticsearch 資料持久化目錄
 │── ig_data/                # Instagram 匯入的原始資料
 │── media/                  # 媒體檔案目錄
-│── langflow-data/          # Langflow 設定檔
 │── docker-compose.yml      # 服務編排設定
 └── spec.md                 # 開發規格書
 ```
@@ -72,7 +72,7 @@ docker-compose up --build
 系統將自動啟動以下服務：
 - **Frontend**: [http://localhost:3000](http://localhost:3000) (主要操作介面)
 - **Backend API**: [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI)
-- **Langflow**: [http://localhost:7860](http://localhost:7860) (AI 流程編排)
+- **Standalone Agent UI**: [http://localhost:8000/static/index.html](http://localhost:8000/static/index.html) (Agent 獨立測試頁)
 - **Kibana**: [http://localhost:5601](http://localhost:5601) (資料儀表板)
 - **Elasticsearch**: [http://localhost:9200](http://localhost:9200)
 
@@ -88,18 +88,23 @@ docker-compose up --build
 - **自動搜尋**：進入頁面時，系統會自動載入最近 **兩年** 的資料。
 - 支援輸入關鍵字自訂搜尋範圍。
 - 支援查看貼文內容、分數 (Score) 與圖片預覽。
-- 點擊卡片上的「🤖 貼文分析」按鈕，即可呼叫後端 AI 進行內容解析 (需先在設定頁面配置 API)。
 
 ### 📊 分析頁面
 - 自動讀取 Elasticsearch 數據，展示每月的發文數量趨勢圖。
 
 ### 💬 AI Agent
-- 提供一個聊天介面，預設整合 MCP Server 協議。
-- 需在 Langflow 中建立對應的 Agent Flow，並確保後端已正確連線。
+- 獨立的助理對話功能！具備基於 LangGraph 打造的分析助理。
+- Agent 可以自動分析您的提問，並且自主呼叫對應的 MCP Tool (例如 `search_instagram` 來獲得第一手貼文資料)。
+- 推薦使用 [Agent 獨立測試頁](http://localhost:8000/static/index.html) 獲得完整的分析過程與思考步驟。
 
-### ⚙️ 系統設置
-- 設定 Langflow 的 Base URL 與相關 API Endpoint。
-- 設定將儲存於 `env/app.env`，並熱重載後端環境變數。
+### ⚙️ 系統設定
+- 將 Azure OpenAI 的 金鑰與 Endpoint 加入至 `env/app.env`：
+  ```env
+  AZURE_OPENAI_API_KEY="..."
+  AZURE_OPENAI_ENDPOINT="..."
+  AZURE_DEPLOYMENT_NAME="..."
+  ```
+- 修改後請重啟 `backend` 容器。
 
 ---
 
@@ -122,11 +127,6 @@ docker-compose up --build
 ### Q: Backend 報錯 "Elasticsearch client version incompatibility"？
 **A:** 專案已鎖定 `elasticsearch<9.0.0` 以相容 v8 伺服器。若自行重建環境，請確保不要安裝 v9 以上的 Python client。
 
-### Q: 如何設定 AI 分析功能？
-**A:**
-1. 進入 Langflow ([http://localhost:7860](http://localhost:7860)) 建立 Flow。
-2. 取得 Flow 的 API Endpoint。
-3. 在 InstaSearch 前端的「系統設置」頁面填入該 API URL。
 
 ### Q: 圖片無法顯示？
 **A:** 請確認 `ig_data` 或 `media` 資料夾權限正確，且圖片路徑與資料庫中的 `uri` 欄位一致。後端已設定靜態檔案掛載，可直接透過 `/images/...` 存取。

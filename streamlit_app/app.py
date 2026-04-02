@@ -71,62 +71,6 @@ def init_elasticsearch():
     st.error("❌ 無法連接到 Elasticsearch，請檢查服務是否運行中！")
     return None
 
-def call_langflow_api(api_url, text):
-    """調用 Langflow API"""
-    logger.info(f"正在呼叫 API：{api_url}")
-    logger.debug(f"發送內容：{text[:100]}...")  # 只記錄前100個字元
-    
-    headers = {"Content-Type": "application/json"}
-    data = {"input": text}  # API期望的格式
-    
-    try:
-        response = requests.post(api_url, headers=headers, json=data, timeout=30)
-        response.raise_for_status()  # 檢查HTTP狀態碼
-        content = response.json()
-        
-        # 嘗試獲取結果
-        if "outputs" in content and content["outputs"]:
-            try:
-                result = content["outputs"][0]["outputs"][0]["results"]["message"]["text"]
-                logger.info("API 調用成功")
-                return result
-            except (KeyError, IndexError) as e:
-                error_msg = f"無效的 API 響應格式: {str(e)}"
-                logger.error(f"{error_msg}, 響應內容: {content}")
-                raise ValueError(error_msg)
-        else:
-            error_msg = "API 響應中沒有輸出內容"
-            logger.error(f"{error_msg}, 響應內容: {content}")
-            raise ValueError(error_msg)
-            
-    except requests.exceptions.RequestException as e:
-        error_msg = f"API 請求失敗: {str(e)}"
-        logger.error(error_msg)
-        raise ValueError(error_msg)
-    except Exception as e:
-        error_msg = f"未預期的錯誤: {str(e)}"
-        logger.error(error_msg)
-        raise ValueError(error_msg)
-
-def analyze_post_content(content):
-    """分析貼文內容"""
-    api_url = os.getenv("LANGFLOW_API_1")
-    if not api_url:
-        error_msg = "未設定 Langflow API"
-        logger.error(error_msg)
-        raise ValueError(error_msg)
-    
-    logger.info("開始分析貼文內容")
-    
-    try:
-        result = call_langflow_api(api_url, content)
-        logger.info("分析完成")
-        return result
-    except Exception as e:
-        error_msg = f"分析失敗: {str(e)}"
-        logger.error(error_msg)
-        raise ValueError(error_msg)
-
 def init_session_state():
     """初始化 session state"""
     if 'current_page' not in st.session_state:
@@ -197,56 +141,12 @@ def display_search_result(result):
     media = result["_source"].get('media', [])
     image_list = get_valid_images(media)
     
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        st.subheader(title)
-        st.write(content)
-        if image_list:
-            st.image(image_list, width=300)
-    
-    with col2:
-        display_analysis_button(title, content)
+    st.subheader(title)
+    st.write(content)
+    if image_list:
+        st.image(image_list, width=300)
     
     st.markdown("---")
-
-def display_analysis_button(title: str, content: str):
-    """顯示分析按鈕和結果"""
-    # 使用唯一的狀態鍵
-    state_key = f"btn_state_{title}"
-    
-    # 初始化狀態
-    if state_key not in st.session_state:
-        st.session_state[state_key] = {
-            'show': False,
-            'result': None
-        }
-    state = st.session_state[state_key]
-    
-    # 建立容器以保持內容穩定
-    result_placeholder = st.empty()
-    
-    # 顯示按鈕
-    btn_text = "🤖 隱藏分析" if state['show'] else "🤖 貼文分析"
-    if st.button(btn_text, key=f"btn_{title}", use_container_width=True):
-        if not state['show']:  # 如果按下按鈕要顯示分析
-            # 啟動分析
-            with st.spinner("分析中..."):
-                try:
-                    result = analyze_post_content(content)
-                    state['result'] = result
-                    state['show'] = True
-                except Exception as e:
-                    state['result'] = f"分析失敗: {str(e)}"
-                    state['show'] = True
-        else:  # 如果是要隱藏分析
-            state['show'] = False
-            result_placeholder.empty()
-            
-    # 顯示結果
-    if state['show'] and state['result']:
-        with result_placeholder:
-            st.info("AI 分析結果", icon="🤖")
-            st.write(state['result'])
 
 def search_page(es):
     """搜尋頁面"""
@@ -343,45 +243,14 @@ def analyze_page(es):
     except Exception as e:
         st.error(f"分析資料時發生錯誤: {e}")
 
-def save_env_settings(base_url, api_1):
+def save_env_settings():
     """儲存環境變數設定"""
-    try:
-        env_content = []
-        env_content.append(f'LANGFLOW_URL="{base_url}"')
-        env_content.append(f'LANGFLOW_API_1="{api_1}"')
-        
-        with open("/app/env/app.env", "w", encoding="utf-8") as f:
-            f.write("\n".join(env_content))
-        
-        load_dotenv("/app/env/app.env", override=True)
-        return True, None
-    except Exception as e:
-        return False, str(e)
+    pass
 
 def settings_page():
     """設置頁面"""
     st.title("⚙️ 設置")
-    st.subheader("🔗 API 端點設定")
-
-    with st.form("api_settings"):
-        base_url = st.text_input(
-            "Langflow 基礎 URL",
-            value=os.getenv("LANGFLOW_URL", "http://langflow:7860"),
-            help="Langflow 服務的基礎 URL"
-        )
-        api_1 = st.text_input(
-            "貼文分析 API",
-            value=os.getenv("LANGFLOW_API_1", ""),
-            help="用於貼文分析的 API 端點"
-        )
-        
-        if st.form_submit_button("💾 儲存設定"):
-            success, error = save_env_settings(base_url, api_1)
-            if success:
-                st.success("✅ 設定已成功儲存！")
-                st.info("🔄 請重新整理頁面以套用新設定")
-            else:
-                st.error(f"❌ 儲存設定時發生錯誤: {error}")
+    st.info("設定已移至 Vue 前端介面")
 
 def main():
     # 初始化

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaSearch Agent - 測試頁面</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --bg-color: #0d1117;
+            --panel-bg: #161b22;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --border-color: #30363d;
+            --primary-color: #58a6ff;
+            --reasoning-color: #238636;
+            --user-bubble: #1f6feb;
+            --assistant-bubble: #21262d;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--panel-bg);
+            border-left: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(22, 27, 34, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .status {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--reasoning-color);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 5px var(--reasoning-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(35, 134, 54, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(35, 134, 54, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(35, 134, 54, 0); }
+        }
+
+        .chat-container {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            max-width: 85%;
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease-out;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        .assistant-message {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+
+        .bubble {
+            padding: 12px 18px;
+            border-radius: 12px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .user-bubble {
+            background-color: var(--user-bubble);
+            color: white;
+            border-bottom-right-radius: 2px;
+        }
+
+        .assistant-bubble {
+            background-color: var(--assistant-bubble);
+            border: 1px solid var(--border-color);
+            border-bottom-left-radius: 2px;
+        }
+
+        .reasoning-box {
+            background-color: rgba(35, 134, 54, 0.1);
+            border-left: 3px solid var(--reasoning-color);
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: #7ee787;
+            display: block; /* Overrides detail default if necessary */
+        }
+
+        .reasoning-box summary {
+            cursor: pointer;
+            user-select: none;
+            font-weight: 500;
+            outline: none;
+            color: #7ee787;
+        }
+
+        .reasoning-content {
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .reasoning-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .input-container {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--panel-bg);
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-box {
+            flex-grow: 1;
+            background-color: #010409;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        .input-box:focus {
+            border-color: var(--primary-color);
+        }
+
+        .send-button {
+            background-color: var(--primary-color);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            padding: 0 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-button:hover {
+            background-color: #79c0ff;
+            transform: translateY(-1px);
+        }
+
+        .send-button:disabled {
+            background-color: var(--border-color);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .suggestion-btn {
+            background-color: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            margin-top: 8px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .suggestion-btn:hover {
+            background-color: rgba(88, 166, 255, 0.1);
+        }
+
+        .suggestions-container {
+            margin-top: 15px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+        }
+
+        .markdown-body {
+            line-height: 1.6;
+        }
+        .markdown-body p { margin-top: 0; margin-bottom: 10px; }
+        .markdown-body p:last-child { margin-bottom: 0; }
+        .markdown-body code {
+            background-color: rgba(110,118,129,0.4);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>InstaSearch Agent (LangGraph/MCP)</h1>
+        <div class="status">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">線上</span>
+            <button onclick="clearHistory()" style="margin-left:15px; background:none; border:1px solid #30363d; color:#8b949e; cursor:pointer; padding:4px 8px; border-radius:4px;">清除對話</button>
+        </div>
+    </div>
+
+    <div class="chat-container" id="chatbox">
+        <div class="message assistant-message">
+            <div class="bubble assistant-bubble">
+                <div class="markdown-body">
+                    <p>你好！我是透過 LangGraph 連接 MCP Server 的 InstaSearch 助理。我可以即時幫你查詢並分析最新的 Instagram 食記與發文趨勢。你想查詢什麼呢？</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="input-container">
+        <input type="text" id="userInput" class="input-box" placeholder="例如：請問最近信義區有哪些熱門酒吧？" autocomplete="off">
+        <button id="sendBtn" class="send-button">發送</button>
+    </div>
+</div>
+
+<script>
+    const chatbox = document.getElementById('chatbox');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const statusText = document.getElementById('statusText');
+    const statusDot = document.getElementById('statusDot');
+
+    let chatHistory = [];
+    let isGenerating = false;
+
+    userInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter' && !isGenerating) {
+            sendMessage();
+        }
+    });
+
+    sendBtn.addEventListener('click', () => {
+        if (!isGenerating) sendMessage();
+    });
+
+    function clearHistory() {
+        chatHistory = [];
+        chatbox.innerHTML = `
+        <div class="message assistant-message">
+            <div class="bubble assistant-bubble">
+                <div class="markdown-body"><p>對話已清除。你好，我可以為你做什麼？</p></div>
+            </div>
+        </div>`;
+        loadDefaultSuggestions();
+    }
+
+    async function sendMessage(overrideText = null) {
+        const text = overrideText || userInput.value.trim();
+        if (!text) return;
+
+        appendMessage('user', text);
+        if (!overrideText) userInput.value = '';
+        
+        isGenerating = true;
+        setUIState(true);
+
+        const currentMessage = { message: text, history: chatHistory };
+        chatHistory.push({ role: 'user', content: text });
+
+        let assistantMessageContainer = createAssistantMessageContainer();
+        let reasoningBox = assistantMessageContainer.querySelector('.reasoning-box');
+        let reasoningContent = assistantMessageContainer.querySelector('.reasoning-content');
+        let contentBox = assistantMessageContainer.querySelector('.markdown-body');
+        
+        // 由於我們改用一次性拋出字串，為了營造等待感先放一個 Loading
+        contentBox.innerHTML = '<p style="color:var(--text-secondary);"><span class="status-dot"></span> 等待模型產出...</p>';
+        
+        let assistantFullContent = "";
+
+        try {
+            const response = await fetch('/api/chat/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentMessage)
+            });
+
+            if (!response.ok) throw new Error("Network response was not ok");
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+                
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.substring(6));
+                            if (data.type === 'reasoning' || data.type === 'step') {
+                                reasoningBox.style.display = 'block';
+                                reasoningBox.open = true; // 強制展開以利檢視串流過程
+                                const item = document.createElement('div');
+                                item.className = 'reasoning-item';
+                                item.textContent = data.content;
+                                // 若為 step 加上強調色
+                                if (data.type === 'step') item.style.color = '#58a6ff';
+                                reasoningContent.appendChild(item);
+                            } else if (data.type === 'result') {
+                                reasoningBox.open = false; // 舊版一次縮合
+                                assistantFullContent = data.content;
+                                contentBox.innerHTML = marked(assistantFullContent);
+                            } else if (data.type === 'stream_text') {
+                                if (!contentBox.dataset.clearedLoading) {
+                                    contentBox.innerHTML = '';
+                                    contentBox.dataset.clearedLoading = 'true';
+                                }
+                                assistantFullContent += data.content;
+                                contentBox.innerHTML = marked(assistantFullContent);
+                            } else if (data.type === 'suggestions') {
+                                const suggContainer = document.createElement('div');
+                                suggContainer.className = 'suggestions-container';
+                                suggContainer.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-secondary);">推薦後續問題：</div>';
+                                data.data.forEach(s => {
+                                    const btn = document.createElement('button');
+                                    btn.className = 'suggestion-btn';
+                                    btn.textContent = s;
+                                    btn.onclick = () => sendMessage(s);
+                                    suggContainer.appendChild(btn);
+                                });
+                                assistantMessageContainer.querySelector('.bubble').appendChild(suggContainer);
+                            } else if (data.type === 'error') {
+                                assistantFullContent += `\n⚠️ 錯誤: ${data.content}`;
+                                contentBox.innerHTML = marked(assistantFullContent);
+                            }
+                        } catch(e) { /* ignore parse error on partial chunks */ }
+                    }
+                }
+                chatbox.scrollTop = chatbox.scrollHeight;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            assistantFullContent += "\n\n**連線發生錯誤。請確認後端正在運行。**";
+            contentBox.innerHTML = marked(assistantFullContent);
+        } finally {
+            reasoningBox.open = false; // 推理與打字全部完成後才自動縮合
+            chatHistory.push({ role: 'assistant', content: assistantFullContent });
+            isGenerating = false;
+            setUIState(false);
+        }
+    }
+
+    function appendMessage(role, text) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${role}-message`;
+        msgDiv.innerHTML = `
+            <div class="bubble ${role}-bubble">
+                <div class="markdown-body">${escapeHTML(text)}</div>
+            </div>
+        `;
+        chatbox.appendChild(msgDiv);
+        chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    function createAssistantMessageContainer() {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'message assistant-message';
+        msgDiv.innerHTML = `
+            <details class="reasoning-box" style="display:none;">
+                <summary>展開思考與執行過程</summary>
+                <div class="reasoning-content"></div>
+            </details>
+            <div class="bubble assistant-bubble">
+                <div class="markdown-body"></div>
+            </div>
+        `;
+        chatbox.appendChild(msgDiv);
+        chatbox.scrollTop = chatbox.scrollHeight;
+        return msgDiv;
+    }
+
+    function setUIState(busy) {
+        userInput.disabled = busy;
+        sendBtn.disabled = busy;
+        if (busy) {
+            statusText.textContent = '思考中...';
+            statusDot.style.backgroundColor = '#d29922'; // yellow
+        } else {
+            statusText.textContent = '線上';
+            statusDot.style.backgroundColor = 'var(--reasoning-color)'; // green
+            userInput.focus();
+        }
+    }
+
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g, 
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag])
+        );
+    }
+
+    // A simple Markdown parser for the basic requirements
+    function marked(text) {
+        if (!text) return "";
+        let html = text
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br/>');
+        return `<p>${html}</p>`;
+    }
+
+    async function loadDefaultSuggestions() {
+        try {
+            const res = await fetch('/api/chat/config');
+            const data = await res.json();
+            
+            if (data.default_suggestions && data.default_suggestions.length > 0) {
+                // 找出畫面上最後一個助理泡泡（剛起頭或清除對話後，就是該歡迎泡泡）
+                const bubbles = document.querySelectorAll('.assistant-bubble');
+                const welcomeBubble = bubbles[bubbles.length - 1];
+                
+                const suggContainer = document.createElement('div');
+                suggContainer.className = 'suggestions-container';
+                suggContainer.style.marginTop = '15px';
+                suggContainer.innerHTML = '<div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">您可以試著問我：</div>';
+                
+                data.default_suggestions.forEach(s => {
+                    const btn = document.createElement('button');
+                    btn.className = 'suggestion-btn';
+                    btn.textContent = s;
+                    btn.onclick = () => sendMessage(s); 
+                    suggContainer.appendChild(btn);
+                });
+                welcomeBubble.appendChild(suggContainer);
+            }
+        } catch (e) { console.warn("無法取得預設按鈕", e); }
+    }
+
+    // 頁面載入時拉取破冰推薦問題
+    window.addEventListener('DOMContentLoaded', loadDefaultSuggestions);
+</script>
+</body>
+</html>

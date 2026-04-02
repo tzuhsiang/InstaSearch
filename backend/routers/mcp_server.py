@@ -64,15 +64,16 @@ async def handle_call_tool(
 # So the full path will be /mcp/messages
 sse = SseServerTransport("/mcp/messages")
 
-@router.get("/sse")
-async def handle_sse(request: Request):
-    async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
+async def sse_app(scope, receive, send):
+    async with sse.connect_sse(scope, receive, send) as streams:
         await server.run(
-            streams.read_stream,
-            streams.write_stream,
+            streams[0],
+            streams[1],
             server.create_initialization_options()
         )
 
-@router.post("/messages")
-async def handle_messages(request: Request):
-    await sse.handle_post_message(request.scope, request.receive, request._send)
+async def messages_app(scope, receive, send):
+    await sse.handle_post_message(scope, receive, send)
+
+router.mount("/sse", sse_app)
+router.mount("/messages", messages_app)

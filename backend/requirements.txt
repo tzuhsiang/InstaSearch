@@ -8,3 +8,6 @@ pillow
 mcp
 sse-starlette
 python-multipart
+langchain-core
+langchain-openai
+langgraph

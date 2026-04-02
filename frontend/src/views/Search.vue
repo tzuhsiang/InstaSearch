@@ -48,17 +48,6 @@ const search = async () => {
     }
 }
 
-const analyzePost = async (post) => {
-    analyzing.value = post.id
-    try {
-        const res = await axios.post('/api/analysis/post', { content: post.content })
-        analysisResult.value[post.id] = res.data.result
-    } catch (e) {
-        analysisResult.value[post.id] = "Analysis failed."
-    } finally {
-        analyzing.value = null
-    }
-}
 
 watch(page, search)
 
@@ -111,22 +100,6 @@ onMounted(() => {
              </div>
              <div v-if="post.media.length" class="post-media">
                  <img v-for="(m, idx) in post.media.slice(0, 3)" :key="idx" :src="m.url" class="post-img" loading="lazy" />
-             </div>
-             
-             <div class="post-actions">
-                 <button @click="analyzePost(post)" class="btn-secondary analyze-btn" :disabled="analyzing === post.id">
-                     <Loader2 v-if="analyzing === post.id" class="animate-spin" size="16" />
-                     <Bot v-else size="16" />
-                     {{ analysisResult[post.id] ? '重新分析' : '貼文分析' }}
-                 </button>
-             </div>
-             
-             <div v-if="analysisResult[post.id]" class="analysis-box">
-                 <div class="analysis-header">
-                    <Bot size="16" /> 
-                    <strong>AI 分析結果</strong>
-                 </div>
-                 <p>{{ analysisResult[post.id] }}</p>
              </div>
         </div>
     </div>

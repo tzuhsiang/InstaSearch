@@ -4,8 +4,9 @@ import axios from 'axios'
 import { Save, Loader2 } from 'lucide-vue-next'
 
 const settings = ref({
-    langflow_url: '',
-    langflow_api_1: ''
+    azure_openai_api_key: '',
+    azure_openai_endpoint: '',
+    azure_deployment_name: ''
 })
 const loading = ref(false)
 const saving = ref(false)
@@ -52,13 +53,18 @@ onMounted(fetchSettings)
         </div>
         <form v-else @submit.prevent="saveSettings" class="settings-form">
             <div class="form-group">
-                <label>Langflow Base URL</label>
-                <input v-model="settings.langflow_url" class="input-field" placeholder="http://langflow:7860" />
+                <label>Azure OpenAI API Key</label>
+                <input type="password" v-model="settings.azure_openai_api_key" class="input-field" placeholder="API Key" />
             </div>
             
             <div class="form-group">
-                <label>Post Analysis API Endpoint</label>
-                <input v-model="settings.langflow_api_1" class="input-field" placeholder="Full API URL" />
+                <label>Azure OpenAI Endpoint</label>
+                <input v-model="settings.azure_openai_endpoint" class="input-field" placeholder="https://<resource>.openai.azure.com/" />
+            </div>
+
+            <div class="form-group">
+                <label>Azure Deployment Name</label>
+                <input v-model="settings.azure_deployment_name" class="input-field" placeholder="e.g. gpt-4o" />
             </div>
             
             <div class="actions">
@@ -91,6 +97,13 @@ onMounted(fetchSettings)
 .form-group label {
     font-size: 0.9rem;
     color: var(--text-secondary);
+}
+.input-field {
+    background: var(--bg-primary);
+    border: 1px solid var(--glass-border);
+    padding: 10px;
+    border-radius: 8px;
+    color: white;
 }
 .actions {
     margin-top: 1rem;

@@ -36,39 +36,4 @@ def get_trend():
         logger.error(f"Trend error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-class AnalyzeRequest(BaseModel):
-    content: str
 
-@router.post("/post")
-def analyze_post(req: AnalyzeRequest):
-    api_url = os.getenv("LANGFLOW_API_1")
-    if not api_url:
-        raise HTTPException(status_code=500, detail="LANGFLOW_API_1 not configured")
-    
-    try:
-        headers = {"Content-Type": "application/json"}
-        # Langflow expects "input" usually, or whatever the component expects
-        data = {"input": req.content}
-        
-        # Check if URL is valid
-        if not api_url.startswith("http"):
-            # Could be internal service name
-            pass 
-
-        response = requests.post(api_url, headers=headers, json=data, timeout=30)
-        response.raise_for_status()
-        content = response.json()
-        
-        if "outputs" in content and content["outputs"]:
-             try:
-                 # Deep path traversal
-                 result = content["outputs"][0]["outputs"][0]["results"]["message"]["text"]
-                 return {"result": result}
-             except (KeyError, IndexError, TypeError):
-                 return {"result": "Parsing error", "raw": content}
-        else:
-             return {"result": "No output", "raw": content}
-
-    except Exception as e:
-        logger.error(f"Analysis error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
