@@ -141,22 +141,25 @@ const sendMessage = async () => {
 </script>
 
 <template>
-  <div class="page-container w-full h-screen p-4 flex justify-center">
-      <!-- Main Chat UI Container, replacing full-width with a nice centered layout -->
-      <div class="chat-wrapper w-full max-w-4xl flex flex-col items-center h-full rounded-[24px] glass-panel shadow-[0_0_40px_rgba(0,0,0,0.3)] border border-[var(--glass-border)] bg-[rgba(22,27,34,0.6)] overflow-hidden">
+  <div class="page-container w-full h-screen p-0 flex justify-center bg-[#07090e]">
+      <!-- Main Chat UI Container - Wider for better feel -->
+      <div class="chat-wrapper w-full max-w-[1200px] flex flex-col h-full shadow-[0_0_80px_rgba(0,0,0,0.5)] border-x border-[var(--glass-border)] bg-[rgba(15,23,42,0.6)] overflow-hidden">
         
-        <!-- Header -->
-        <div class="chat-header w-full shrink-0 flex justify-between items-center px-6 py-4 border-b border-[var(--glass-border)] bg-[rgba(22,27,34,0.4)] backdrop-blur-md">
-            <h1 class="page-title flex items-center gap-2 text-[1.2rem] font-bold tracking-wide text-[var(--accent-primary)]">
-                <Sparkles class="text-[var(--accent-primary)]" size="22" /> InstaSearch Agent
-            </h1>
-            <div class="flex items-center gap-5">
-                <div class="status-indicator flex items-center gap-2 text-sm text-[var(--text-secondary)] font-medium">
-                    <span class="status-dot" :class="loading ? 'busy' : 'online'"></span>
-                    <span>{{ loading ? '思考中...' : '線上' }}</span>
+        <!-- Header - More spacious -->
+        <div class="chat-header w-full shrink-0 flex flex-wrap justify-between items-center px-8 py-6 border-b border-[var(--glass-border)] bg-[rgba(15,23,42,0.8)] backdrop-blur-xl z-20">
+            <h1 class="page-title flex items-center gap-3 text-[1.4rem] font-extrabold tracking-tight">
+                <div class="p-2 bg-blue-500/10 rounded-xl border border-blue-500/20">
+                    <Sparkles class="text-[var(--accent-primary)]" size="24" /> 
                 </div>
-                <button @click="clearHistory" class="clear-btn flex items-center gap-1.5 text-xs px-3 py-1.5 border border-[var(--glass-border)] text-[var(--text-secondary)] rounded-lg hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all">
-                    <Trash2 size="14" /> 清除對話
+                <span class="bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">InstaSearch Agent</span>
+            </h1>
+            <div class="flex items-center gap-4 sm:gap-8">
+                <div class="status-indicator flex items-center gap-3 px-4 py-2 bg-slate-800/40 rounded-full border border-white/5 text-[0.95rem] text-[var(--text-secondary)] font-medium">
+                    <span class="status-dot" :class="loading ? 'busy' : 'online'"></span>
+                    <span>{{ loading ? '思考中...' : '助理連線中' }}</span>
+                </div>
+                <button @click="clearHistory" class="clear-btn flex items-center gap-2 text-sm px-4 py-2.5 bg-red-500/5 text-red-400 border border-red-500/20 rounded-xl hover:bg-red-500/10 hover:border-red-500/40 transition-all duration-300">
+                    <Trash2 size="18" /> <span class="hidden md:inline">重啟對話</span>
                 </button>
             </div>
         </div>
@@ -186,15 +189,17 @@ const sendMessage = async () => {
                         <!-- Main text bubble -->
                         <div class="bubble markdown-body shadow-md" v-if="msg.html" v-html="msg.html"></div>
 
-                        <!-- Suggestions Container -->
-                        <div class="suggestions-container mt-3 pt-3" v-if="msg.role === 'assistant' && !msg.isGenerating && (msg.suggestions?.length > 0 || (idx === 0 && defaultSuggestions.length > 0))">
-                            <div class="text-[0.8rem] text-[var(--text-secondary)] mb-2 tracking-wide uppercase font-semibold">💡 您可以試著問我：</div>
-                            <div class="flex flex-wrap gap-2">
+                        <!-- Suggestions Container - Refined pill buttons -->
+                        <div class="suggestions-container mt-6 pt-6 border-t border-[var(--glass-border)]" v-if="msg.role === 'assistant' && !msg.isGenerating && (msg.suggestions?.length > 0 || (idx === 0 && defaultSuggestions.length > 0))">
+                            <div class="text-[0.85rem] text-slate-500 mb-4 tracking-wider font-bold flex items-center gap-2 uppercase">
+                                <Sparkles size="14" class="text-blue-400" /> 您可以試著問我
+                            </div>
+                            <div class="flex flex-wrap gap-3">
                                 <button 
                                     v-for="sugg in (msg.suggestions?.length > 0 ? msg.suggestions : defaultSuggestions)" 
                                     :key="sugg"
                                     @click="sendSuggestion(sugg)" 
-                                    class="suggestion-btn text-[0.85rem] px-3.5 py-1.5 border border-[var(--accent-primary)] text-[var(--accent-primary)] rounded-lg hover:bg-[var(--accent-primary)] hover:text-white transition-colors duration-200 shadow-sm bg-[rgba(88,166,255,0.05)]">
+                                    class="suggestion-btn text-[0.9rem] px-5 py-2.5 bg-slate-800/40 border border-blue-500/20 text-blue-300 rounded-full hover:bg-blue-500/10 hover:text-white hover:border-blue-500/50 transition-all duration-300 shadow-sm hover:shadow-blue-500/10 hover:-translate-y-0.5">
                                     {{ sugg }}
                                 </button>
                             </div>
@@ -204,13 +209,19 @@ const sendMessage = async () => {
             </div>
         </div>
         
-        <!-- Input Area -->
-        <div class="input-area w-full p-4 md:p-6 bg-[rgba(1,4,9,0.5)] border-t border-[var(--glass-border)] backdrop-blur-sm">
-            <div class="input-wrapper relative flex items-center max-w-3xl mx-auto">
-                <input v-model="input" @keyup.enter="sendMessage" placeholder="例如：請問最近信義區有哪些熱門酒吧？" class="chat-input w-full bg-[#010409] border border-[var(--glass-border)] text-[var(--text-primary)] px-5 py-3.5 rounded-xl pr-14 focus:outline-none focus:border-[var(--accent-primary)] focus:-translate-y-[1px] transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]" />
-                <button @click="sendMessage" class="send-btn absolute right-2.5 bg-[var(--accent-primary)] text-white p-2.5 rounded-lg disabled:opacity-50 disabled:bg-[var(--glass-border)] disabled:text-[var(--text-secondary)] hover:bg-blue-400 transition-all shadow-md active:scale-95" :disabled="loading || !input.trim()">
-                    <Send size="18" />
+        <!-- Input Area - Better shadow and focus states -->
+        <div class="input-area w-full p-6 md:p-8 bg-[rgba(2,6,23,0.95)] border-t border-[var(--glass-border)] backdrop-blur-xl">
+            <div class="input-wrapper relative flex items-center w-full max-w-5xl mx-auto group">
+                <input v-model="input" @keyup.enter="sendMessage" placeholder="輸入您的指令，例如：分析信義區最近一週的食記趨勢..." 
+                    class="chat-input w-full bg-[#020617] border border-slate-800 text-[var(--text-primary)] px-8 py-5 rounded-[22px] pr-20 focus:outline-none focus:border-[var(--accent-primary)] focus:ring-4 focus:ring-blue-500/10 transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.4)] text-lg placeholder:text-slate-600" />
+                <button @click="sendMessage" 
+                    class="send-btn absolute right-3 bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-4 rounded-2xl disabled:opacity-30 disabled:grayscale transition-all duration-300 shadow-lg hover:shadow-blue-500/20 active:scale-95 group-focus-within:border-white/10" 
+                    :disabled="loading || !input.trim()">
+                    <Send size="22" />
                 </button>
+            </div>
+            <div class="text-center mt-4 text-[0.75rem] text-slate-500 font-medium tracking-wider">
+                POWERED BY LANGGRAPH & MCP PROTOCOL
             </div>
         </div>
         
@@ -220,18 +231,21 @@ const sendMessage = async () => {
 
 <style scoped>
 .page-container {
-    background: radial-gradient(circle at center, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+    background-color: #07090e;
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.05) 0px, transparent 50%);
 }
 
 .message-wrapper {
     display: flex;
-    gap: 16px;
-    max-width: 90%;
-    animation: fadeIn 0.3s ease-out;
+    gap: 20px;
+    max-width: 85%;
+    animation: messageIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+@keyframes messageIn {
+    from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
