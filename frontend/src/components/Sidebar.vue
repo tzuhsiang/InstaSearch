@@ -1,6 +1,6 @@
 <script setup>
 import { RouterLink, useRoute } from 'vue-router'
-import { Search, BarChart2, Settings, Sparkles, Radio } from 'lucide-vue-next'
+import { Search, BarChart2, Settings, Radio } from 'lucide-vue-next'
 
 const route = useRoute()
 

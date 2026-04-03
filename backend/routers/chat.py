@@ -74,8 +74,17 @@ async def chat(req: ChatRequest):
                         for tc in chunk.tool_call_chunks:
                             tool_name = tc.get("name")
                             if tool_name:
-                                payload = {'type': 'reasoning', 'content': f'🔧 準備呼叫工具: {tool_name}'}
+                                payload = {'type': 'reasoning', 'content': f'🔧 啟動工具: {tool_name}'}
                                 yield f"data: {json.dumps(payload)}\n\n"
+                
+                elif kind == "on_tool_start" and name == "update_search_ui":
+                    args = event["data"].get("input", {})
+                    payload = {
+                        "type": "ui_command",
+                        "command": "update_search",
+                        "params": args
+                    }
+                    yield f"data: {json.dumps(payload)}\n\n"
 
                 elif kind == "on_tool_end":
                     tool_name = event["name"]

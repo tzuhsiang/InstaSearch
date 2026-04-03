@@ -54,6 +54,18 @@ async def init_mcp_client():
             raise RuntimeError(f"Failed to load MCP server {server_name}") from e
             
     logger.info(f"🎉 啟動完成！總共成功載入 {len(_mcp_tools)} 支 MCP 工具。")
+    
+    # 手動注入 UI 控制工具
+    async def _update_ui_arun(query: str, start_date: str = None, end_date: str = None) -> str:
+        return f"已發送 UI 更新指令：搜尋「{query}」，時間範圍「{start_date} ~ {end_date}」"
+
+    ui_tool = StructuredTool.from_function(
+        name="update_search_ui",
+        description="更新前端搜尋介面的關鍵字與日期範圍。當使用者要求「搜尋」、「找看看」或者是「顯示最近...的資料」時，請務必呼叫此工具同步更新介面。",
+        func=lambda query, start_date=None, end_date=None: "Synchronous execution not supported",
+        coroutine=_update_ui_arun
+    )
+    _mcp_tools.append(ui_tool)
 
 async def close_mcp_client():
     global _mcp_stack
