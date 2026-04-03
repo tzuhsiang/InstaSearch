@@ -2,6 +2,9 @@
 import { ref, watch, onMounted } from 'vue'
 import axios from 'axios'
 import { Search, Loader2, Bot, Calendar } from 'lucide-vue-next'
+import { useUIStore } from '../stores/ui'
+
+const ui = useUIStore()
 
 // 預設時間範圍：最近兩年
 const now = new Date()
@@ -58,8 +61,12 @@ onMounted(() => {
 
 <template>
   <div class="page-container">
-    <div class="page-header">
+    <div class="page-header main-header">
        <h1 class="page-title">搜尋食記</h1>
+       <button @click="ui.toggleAgent" class="btn-secondary agent-toggle-btn" :class="{ 'active': ui.isAgentOpen }">
+          <Bot size="18" />
+          <span>AI 助理</span>
+       </button>
     </div>
     
     <div class="glass-panel p-6 mb-8 filter-bar">
@@ -242,5 +249,24 @@ onMounted(() => {
 }
 .page-info {
     color: var(--text-secondary);
+}
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+.agent-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    transition: all 0.3s;
+}
+.agent-toggle-btn.active {
+    background: var(--accent-primary);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
 }
 </style>

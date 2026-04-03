@@ -7,7 +7,6 @@ const route = useRoute()
 const links = [
   { name: '搜尋', path: '/', icon: Search },
   { name: '分析', path: '/analysis', icon: BarChart2 },
-  { name: 'AI Agent', path: '/agent', icon: Sparkles },
   { name: '設置', path: '/settings', icon: Settings },
 ]
 </script>
