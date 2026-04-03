@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+elasticsearch<9.0.0
+pydantic
+python-dotenv
+requests
+pillow
+mcp
+sse-starlette
+python-multipart
+langchain-core
+langchain-openai
+langgraph

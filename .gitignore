@@ -30,8 +30,10 @@ langflow-postgres/*
 
 
 # 但保留 env 目錄本身
-env/network.env
+env/app.env
 
 # 忽略 streamlit_app 目錄內的IG Data和media資料夾
 streamlit_app/media/*
 streamlit_app/ig_data/*
+.DS_Store
+notebooks/jojo_eat_1114/

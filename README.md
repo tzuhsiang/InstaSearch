@@ -1,137 +1,117 @@
-# 📌 InstaSearch - Elasticsearch + Python 全文檢索專案
+# 📌 InstaSearch - 現代化 AI 全文檢索與分析平台
 
-## 🔥 簡介
-InstaSearch 是一個基於 **Elasticsearch** 的全文檢索系統，提供 **Streamlit** 網站介面並進行文本搜索。此專案適用於學習 **Elasticsearch 搜索技術**，並提供Python API 來讀取和處理 IG 文章或其他文本數據。
+[![Vue.js](https://img.shields.io/badge/Vue.js-3.0-4FC08D?style=flat&logo=vue.js)](https://vuejs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Elasticsearch](https://img.shields.io/badge/Elasticsearch-8.11-005571?style=flat&logo=elasticsearch)](https://www.elastic.co/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker)](https://www.docker.com/)
 
----
-### 網站介面
-![網站介面](imgs/demo.png)
-
-### 設定頁面(上傳IG資料檔)
-![網站介面](imgs/demo2.png)
-
-### ElasticSearch示意資料(Kibana介面)
-![網站介面](imgs/demo3.png)
----
-
-## 系統要求
-
-- Docker 與 Docker Compose
-
-## 安裝與設定
-
-
-### **2️⃣ 啟動所有服務**
-使用 Docker Compose 啟動所有服務（Elasticsearch、Kibana、Streamlit）：
-```bash
-docker compose up -d
-```
-
-此命令會啟動：
-- Elasticsearch (http://localhost:9200)
-- Kibana (http://localhost:5601)
-- Streamlit 應用程式 (http://localhost:8501)
-
-### **3️⃣ 驗證服務狀態**
-
-**檢查 Elasticsearch：**
-```bash
-curl http://localhost:9200
-```
-
-**檢查 Kibana：**
-打開瀏覽器訪問： 👉 [http://localhost:5601](http://localhost:5601)
-
-**檢查 Streamlit：**
-打開瀏覽器訪問： 👉 [http://localhost:8501](http://localhost:8501)
+**InstaSearch** 是一個現代化的全端應用程式，結合了 **Elasticsearch** 全文檢索、**FastAPI** 後端服務與 **Vue.js** 高質感前端介面。
+本專案提供 Instagram 食記貼文的搜尋與趨勢分析功能，並整合了 **LangGraph** 與 **MCP Server** 架構，內建一個隨時可喚起的 AI Agent 助理。
 
 ---
 
-## 使用方法
+## 🖼️ 介面展示
 
-### **1️⃣ 資料處理**
+![Main UI](imgs/demo_ui.png)
+*現代化深色模式介面與高效搜尋結果展示*
+*主要介面*: [http://localhost:3000](http://localhost:3000)
 
-專案包含一個完整的資料處理流程，用於處理 Instagram 資料的導入：
-
-1. 將你的 Instagram 資料壓縮檔放在 `ig_data/` 目錄下
-2. 系統會自動：
-   - ✅ 解壓縮 Instagram 資料
-   - ✅ 處理文章內容與媒體檔案
-   - ✅ 建立 Elasticsearch 索引
-   - ✅ 導入資料至 Elasticsearch
-   - ✅ 自動整理媒體檔案至正確位置
-
-### **2️⃣ 使用網站介面**
-直接訪問 http://localhost:8501 即可使用搜尋功能
+![AI Agent 測試頁面](imgs/demo_agent.png)
+*獨立的 AI Agent 測試頁面，支援 SSE 串流對話與思考過程展示*
+*Agent本地測試頁*: [http://localhost:8000/static/index.html](http://localhost:8000/static/index.html)
 
 ---
 
-## 📌 專案結構
+## 🚀 主要特色
+
+- **🎨 現代化 UI 設計**: 採用 Glassmorphism (玻璃擬態) 風格，提供流暢的搜尋體驗。
+- **🔍 強大搜尋引擎**: 基於 Elasticsearch 的高效全文檢索，支援多欄位關鍵字與日期範圍篩選。
+- **🤖 內建 AI Agent 側邊欄**:
+  - **一鍵喚起**: 在搜尋頁面右上角即可開啟 Agent 側邊欄（寬度佔 1/3）。
+  - **動態佈局**: 開啟時主頁面自動縮放，支援一邊搜尋一邊與 AI 對話。
+  - **思考透明化**: 支援展示 Agent 的工具呼叫與邏輯推演過程。
+- **📊 數據可視化**: 內建移動式圖表，自動分析發文趨勢。
+- **🐳 完整容器化**: 使用 Docker Compose 一鍵部署所有服務。
+
+---
+
+## 🛠️ 系統架構
+
+1.  **Frontend**: Vue 3 + Vite + Pinia + Lucide Icons
+2.  **Backend**: FastAPI + Python (內植 MCP Server)
+3.  **Database**: Elasticsearch
+4.  **AI Engine**: LangGraph + Azure OpenAI
+5.  **Infrastructure**: Docker Compose
+
+## 📂 專案結構
+
 ```bash
 InstaSearch/
-│── data/                      # 本機儲存 Elasticsearch 索引的目錄
-│── ig_data/                   # Instagram資料目錄
-│── media/                     # 媒體檔案存放目錄
-│── docker-compose.yml         # Docker 設定文件
-│── streamlit_app/            # Streamlit 應用程式目錄
-│   ├── app.py               # Streamlit 應用程式主程式
-│   ├── setup.py             # 資料處理腳本
-│   └── Dockerfile          # Streamlit 容器設定
-│── notebook/                 # ES資料新刪修notebook腳本
-│── README.md                # 本文件
+│── backend/                # FastAPI 後端服務
+│   ├── routers/            # API 路由 (search, analysis, settings, chat)
+│   ├── agent.py            # LangGraph Agent 核心邏輯
+│   └── Dockerfile
+│
+│── frontend/               # Vue.js 前端應用
+│   ├── src/
+│   │   ├── components/     # AgentChat, AgentSidebar 等組件
+│   │   ├── stores/         # UI 狀態管理 (Pinia)
+│   │   ├── views/          # 頁面組件 (Search, Analysis, Settings)
+│   │   └── style.css       # 核心設計系統
+│   └── Dockerfile
+│
+│── ig_data/                # 原始資料存放
+│── imgs/                   # UI 展示圖檔
+│── docker-compose.yml      # 服務編排
+└── README.md
 ```
 
-## ⚙️ 系統架構
+---
 
-1. **容器化服務**
-   - Elasticsearch：資料儲存和搜尋引擎
-   - Kibana：資料視覺化和管理介面
-   - Streamlit：使用者介面和搜尋功能
+## 🚀 快速開始
 
-2. **資料處理流程**
-   - 檔案系統處理：自動處理跨容器的檔案操作
-   - 智能路徑處理：確保媒體檔案路徑正確
-   - 自動權限管理：確保容器間的檔案存取權限
-   - Elasticsearch 整合：自動建立索引和導入資料
+### 1️⃣ 前置需求
+- 安裝 [Docker](https://www.docker.com/) 與 Docker Compose
 
-3. **搜尋功能**
-   - 全文檢索
-   - 時間範圍篩選
-   - 媒體檔案預覽
+### 2️⃣ 啟動服務
+```bash
+docker-compose up --build
+```
+
+服務連結：
+- **主要介面**: [http://localhost:3000](http://localhost:3000)
+- **API 文件**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Agent 本地測試頁**: [http://localhost:8000/static/index.html](http://localhost:8000/static/index.html)
+
+---
+
+## 📖 使用指南
+
+### 🔍 搜尋與 AI 助理
+- **全文檢索**：支援關鍵字與極速的 Elasticsearch 查詢。
+- **喚起助理**：點擊搜尋頁面右上方的 **「AI 助理」** 按鈕，右側會展開對話視窗。
+- **邊看邊問**：側邊欄開啟時，主內容會自動調整寬度，讓您可以一邊查看搜尋結果一邊與 AI 對話。
+
+### 📊 趨勢分析
+- 切換至「分析」標籤，系統會自動匯總 Elasticsearch 中的數據並生成互動式趨勢圖表。
 
 ---
 
 ## 🛠️ 常見問題
 
-### **1️⃣ 服務無法啟動？**
-檢查執行中的容器：
-```bash
-docker ps
-```
-重置並重啟服務：
-```bash
-docker compose down -v
-docker compose up -d
-```
+### Q: 服務啟動後前端顯示 "Network Error"？
+**A:** 請確認 `backend` 容器是否成功啟動，且 `.env` (或 `env/app.env`) 中的 Azure OpenAI 設定正確。
 
-### **2️⃣ 資料導入失敗？**
-確認以下幾點：
-- 檢查容器日誌：
-  ```bash
-  docker compose logs streamlit_search
-  ```
-- 確認 `ig_data` 目錄中有正確的 ZIP 檔案
-- 檢查 `logs` 目錄下的錯誤日誌
+### Q: 圖片無法顯示？
+**A:** 請確認 `ig_data` 目錄中的圖片路徑與資料庫一致，後端會自動掛載並透過 `/images/` 存取。
 
-### **3️⃣ 媒體檔案無法顯示？**
-確認：
-- 檢查容器掛載目錄的權限
-- 確認檔案路徑格式是否正確（應為 /app/media/posts/[date]/[filename]）
-- 重新執行資料處理流程
+### Q: Elasticsearch 回傳 503？
+**A:** 這通常是磁碟空間不足導致進入唯讀模式。請解除索引鎖定：
+```bash
+curl -X PUT "localhost:9200/_all/_settings" -H 'Content-Type: application/json' -d '{"index.blocks.read_only_allow_delete": null}'
+```
 
 ---
 
-## 📢 聯絡作者
-如果你有任何問題或改進建議，請聯絡 [你的 GitHub](https://github.com/yourname)！
-
-🚀 **快來試試 Elasticsearch 的強大全文檢索功能吧！**
+## 📧 聯絡
+如有任何問題，歡迎提交 Issue 或 Pull Request。

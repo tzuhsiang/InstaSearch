@@ -4,11 +4,11 @@ services:
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false  # ❶ 關閉安全性
+      - xpack.security.enabled=false
     ports:
       - "9200:9200"
     volumes:
-      - ./data:/usr/share/elasticsearch/data  # ✅ 讓它使用本機的 data/ 目錄
+      - ./data:/usr/share/elasticsearch/data
     networks:
       - elk
 
@@ -24,68 +24,39 @@ services:
     networks:
       - elk
 
-  streamlit_search:
+  backend:
     build:
-      context: ./streamlit_app
-      args:
-        - http_proxy=${http_proxy}
-        - https_proxy=${https_proxy}
-        - HTTP_PROXY=${HTTP_PROXY}
-        - HTTPS_PROXY=${HTTPS_PROXY}
-    container_name: streamlit
+      context: ./backend
+    container_name: backend
+    volumes:
+      - ./backend:/app
+      - ./env:/app/env
+      - ./ig_data:/app/ig_data
+      - ./media:/app/media
     env_file:
       - env/app.env
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - STREAMLIT_SERVER_MAX_UPLOAD_SIZE=1000
     ports:
-      - "8501:8501"
+      - "8000:8000"
+    environment:
+      - ES_HOST=http://elasticsearch:9200
     depends_on:
       - elasticsearch
     networks:
       - elk
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
     volumes:
-      - ./streamlit_app:/app  # 讓本機的 streamlit_app 目錄與容器同步
-      - ./logs:/app/logs  # 📌 把 logs 目錄掛載到本機
-      - ./media:/app/media  # 📌 把 media 目錄掛載到本機
-      - ./ig_data:/app/ig_data  # 📌 把 ig_data 目錄掛載到本機
-      - ./setup.py:/app/setup.py  # 📌 掛載 setup.py 到容器
-    working_dir: /app  # 設定容器內的工作目錄
-    user: root  # 使用root用戶以確保權限
-    entrypoint: ["sh", "/app/entrypoint.sh"]  # 使用啟動腳本
-
-
-  langflow:
-    image: langflowai/langflow:latest
-    container_name: langflow
+      - ./frontend:/app
+      - /app/node_modules
     ports:
-      - "7860:7860"
-    environment:
-      - LANGFLOW_DATABASE_URL=postgresql://langflow:langflow@postgres:5432/langflow
-      - LANGFLOW_CONFIG_DIR=/var/lib/langflow
-    env_file:
-      - env/app.env
-    volumes:
-      - ./langflow-data:/var/lib/langflow
+      - "3000:3000"
+    depends_on:
+      - backend
     networks:
       - elk
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:16
-    container_name: langflow_postgres
-    environment:
-      POSTGRES_USER: langflow
-      POSTGRES_PASSWORD: langflow
-      POSTGRES_DB: langflow
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./langflow-postgres:/var/lib/postgresql/data
-    networks:
-      - elk
-    restart: unless-stopped
-
 
 
 
