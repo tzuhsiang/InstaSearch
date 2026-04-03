@@ -3,6 +3,7 @@ import { ref, watch, onMounted } from 'vue'
 import axios from 'axios'
 import { Search, Loader2, Bot, Calendar } from 'lucide-vue-next'
 import { useUIStore } from '../stores/ui'
+import PostModal from '../components/PostModal.vue'
 
 const ui = useUIStore()
 
@@ -19,10 +20,20 @@ const page = ref(1)
 const results = ref([])
 const total = ref(0)
 const loading = ref(false)
-const analyzing = ref(null)
-const analysisResult = ref({})
-
 const error = ref(null)
+
+// 彈窗狀態
+const selectedPost = ref(null)
+const isModalOpen = ref(false)
+
+const openPostDetail = (post) => {
+    selectedPost.value = post
+    isModalOpen.value = true
+}
+
+const closePostDetail = () => {
+    isModalOpen.value = false
+}
 
 const search = async () => {
     loading.value = true
@@ -53,6 +64,16 @@ const search = async () => {
 
 
 watch(page, search)
+
+// 監聽 Agent 傳來的搜尋指令
+watch(() => ui.pendingSearch, (newVal) => {
+    if (!newVal) return
+    if (newVal.query !== undefined) query.value = newVal.query
+    if (newVal.start_date !== undefined) startDate.value = newVal.start_date
+    if (newVal.end_date !== undefined) endDate.value = newVal.end_date
+    page.value = 1
+    search()
+}, { deep: true })
 
 onMounted(() => {
     search()
@@ -97,7 +118,7 @@ onMounted(() => {
     </div>
 
     <div v-else class="results-grid">
-        <div v-for="post in results" :key="post.id" class="post-card glass-panel">
+        <div v-for="post in results" :key="post.id" class="post-card glass-panel" @click="openPostDetail(post)">
              <div class="post-header">
                  <span class="post-date">{{ new Date(post.datetime).toLocaleDateString() }}</span>
                  <span class="score-badge">Score: {{ post.score.toFixed(1) }}</span>
@@ -116,6 +137,14 @@ onMounted(() => {
          <span class="page-info">第 {{ page }} 頁</span>
          <button class="btn-secondary" @click="page++" :disabled="results.length < 10 && page * 10 >= total">下一頁</button>
     </div>
+
+    <!-- 貼文詳情彈窗 -->
+    <PostModal 
+      v-if="selectedPost"
+      :post="selectedPost"
+      :is-open="isModalOpen"
+      @close="closePostDetail"
+    />
   </div>
 </template>
 
@@ -172,7 +201,8 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    transition: transform 0.2s;
+    transition: transform 0.2s, background-color 0.2s;
+    cursor: pointer;
 }
 .post-card:hover {
     transform: translateY(-2px);

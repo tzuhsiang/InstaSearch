@@ -119,6 +119,10 @@ const sendMessage = async () => {
                             assistMsg.html = marked(assistMsg.text)
                         } else if (data.type === 'suggestions') {
                             assistMsg.suggestions = data.data
+                        } else if (data.type === 'ui_command') {
+                            if (data.command === 'update_search') {
+                                ui.triggerSearch(data.params)
+                            }
                         } else if (data.type === 'error') {
                             assistMsg.error = true
                             assistMsg.text += `\n⚠️ 錯誤: ${data.content}`

@@ -11,6 +11,7 @@ from langchain_openai import AzureChatOpenAI
 from langgraph.graph import StateGraph, START, END, MessagesState
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
+from langgraph.checkpoint.memory import MemorySaver
 
 from mcp.client.sse import sse_client
 from mcp.client.session import ClientSession
@@ -54,6 +55,18 @@ async def init_mcp_client():
             raise RuntimeError(f"Failed to load MCP server {server_name}") from e
             
     logger.info(f"🎉 啟動完成！總共成功載入 {len(_mcp_tools)} 支 MCP 工具。")
+    
+    # 手動注入 UI 控制工具
+    async def _update_ui_arun(query: str, start_date: str = None, end_date: str = None) -> str:
+        return f"已發送 UI 更新指令：搜尋「{query}」，時間範圍「{start_date} ~ {end_date}」"
+
+    ui_tool = StructuredTool.from_function(
+        name="update_search_ui",
+        description="更新前端搜尋介面的關鍵字與日期範圍。當使用者要求「搜尋」、「找看看」或者是「顯示最近...的資料」時，請務必呼叫此工具同步更新介面。",
+        func=lambda query, start_date=None, end_date=None: "Synchronous execution not supported",
+        coroutine=_update_ui_arun
+    )
+    _mcp_tools.append(ui_tool)
 
 async def close_mcp_client():
     global _mcp_stack
@@ -137,12 +150,12 @@ def build_graph() -> StateGraph:
     async def run_supervisor(state: MessagesState):
         messages = state["messages"]
         sys_prompt = SystemMessage(content=(
-            "你是 Instagram 食記分析的主管 (Supervisor)。"
-            "負責決定下一個要執行的部門。你看不到實際食記資料，只能規劃。\n"
-            "如果有需要深入查詢 IG 貼文、尋找餐廳或分析發文趨勢，請交由 'retriever'。\n"
-            "如果資料已經查夠了（已產生 ToolMessage），或是使用者僅要求純粹撰寫報告，請交由 'reporter'。\n"
-            "如果使用者單純閒聊、打招呼或是詢問『系統有哪些功能』，請派給 'info_agent'。\n"
-            "直接判斷下一個節點，請勿回答其他內容。"
+            "你是 Instagram 食記分析的主管 (Supervisor)。負責決定下一個要執行的部門。\n"
+            "1. 需要深入查詢 IG 貼文、尋找餐廳或更新搜尋介面：交給 'retriever'。\n"
+            "2. 如果已經呼叫過工具且已獲得結果，或者已經更新了搜尋介面 (update_search_ui)，請交給 'reporter' 向使用者確認。\n"
+            "3. 如果使用者單純閒聊、打招呼或是詢問『系統有哪些功能』：交給 'info_agent'。\n"
+            "4. 任務已完全達成且已回覆使用者：選擇 'FINISH'。\n"
+            "請判斷使用者是否真的需要『詳細分析報告』，若只是單純『搜尋』，請確保下一個流程保持簡短。"
         ))
         msg_list = [sys_prompt] + messages
         router_llm = llm.with_structured_output(RouterOutput)
@@ -180,12 +193,30 @@ def build_graph() -> StateGraph:
 
     async def run_reporter(state: MessagesState):
         messages = state["messages"]
-        valid_messages = [m for m in messages if not m.additional_kwargs.get("next_node")]
+        
+        # 訊息修剪 (Message Pruning): 只保留使用者最後的需求、系統指令與最近的工具結果
+        # 避免將所有過往的中間思考與冗餘過程塞入最終報告生成
+        pruned = []
+        for m in reversed(messages):
+            if isinstance(m, SystemMessage) or isinstance(m, HumanMessage):
+                pruned.insert(0, m)
+                if len([x for x in pruned if isinstance(x, HumanMessage)]) >= 2: break
+            elif isinstance(m, ToolMessage):
+                pruned.insert(0, m)
+            elif isinstance(m, AIMessage) and m.tool_calls:
+                pruned.insert(0, m)
+        
+        # 檢查是否剛執行過 UI 更新
+        ui_updated = any(isinstance(m, ToolMessage) and m.name == "update_search_ui" for m in messages)
+        
         sys_prompt = SystemMessage(content=(
-            "你是資深 IG 食記編輯員 (Reporter)。你手上沒有查詢工具，任務是從對話歷史的 JSON 結果擷取資訊，並寫成極具質感的 Markdown 報告。\n"
-            "報告內請提供圖文並茂的格式，摘要店名、餐點與評價。請直接輸出一篇專業的 Markdown 食評報告或分析趨勢。"
+            "你是資深 IG 食記編輯員 (Reporter)。你的任務是彙整資訊回報給使用者。\n"
+            "【關鍵原則】\n"
+            "1. 原則：如果對話中剛呼叫過 `update_search_ui` 且使用者指示為搜尋性質，請保持回覆為『一句話確認』即可，直接告知『已為您更新介面...』，不要輸出長篇 Markdown 報告。\n"
+            "2. 深度分析：只有在使用者要求『分析』、『整理評價』、『寫文章』時，才需產生專業的 Markdown 報告。\n"
+            "3. 避免重複：不要在聊天視窗中重複列出左側搜尋結果已經看得到的內容。"
         ))
-        msg_list = [sys_prompt] + valid_messages
+        msg_list = [sys_prompt] + pruned
         response = await llm.ainvoke(msg_list)
         return {"messages": [response]}
 
@@ -201,6 +232,21 @@ def build_graph() -> StateGraph:
         suggester_llm = llm.with_structured_output(SuggestionResponse)
         response = await suggester_llm.ainvoke(msg_list)
         return {"messages": [AIMessage(content=response.model_dump_json(), additional_kwargs={"is_suggestions": True})]}
+
+    async def run_reflector(state: MessagesState):
+        """[EXPERIMENTAL] 修復工具呼叫失敗或無結果的狀況"""
+        messages = state["messages"]
+        last_msg = messages[-1]
+        error_content = last_msg.content if isinstance(last_msg, ToolMessage) else "未知錯誤"
+        
+        sys_prompt = SystemMessage(content=(
+            "你是錯誤診斷與修正專員 (Reflector)。\n"
+            f"前一個工具執行失敗，錯誤為：{error_content}\n"
+            "請分析錯誤原因（如：格式不對、日期範圍無資料），並對使用者原本的需求進行微調，重新交給 retriever 嘗試。"
+        ))
+        msg_list = [sys_prompt] + messages
+        response = await llm.ainvoke(msg_list)
+        return {"messages": [response]}
 
     tool_node = ToolNode(_mcp_tools)
     
@@ -228,6 +274,7 @@ def build_graph() -> StateGraph:
     workflow.add_node("retriever", run_retriever)
     workflow.add_node("reporter", run_reporter)
     workflow.add_node("suggester", run_suggester)
+    workflow.add_node("reflector", run_reflector)
     workflow.add_node("tools", tool_node)
     
     workflow.add_edge(START, "supervisor")
@@ -239,14 +286,33 @@ def build_graph() -> StateGraph:
         "FINISH": END
     })
     
+    def tool_exit_router(state: MessagesState) -> str:
+        last_msg = state["messages"][-1]
+        # Check for empty or error content
+        content = str(last_msg.content)
+        if "Error" in content or "無資料" in content or len(content) < 5:
+             return "reflector"
+        # 效能優化：如果已經呼叫過 UI 更新且是搜尋操作，直接給 reporter
+        history = state["messages"]
+        for msg in reversed(history[-3:]):
+            if isinstance(msg, ToolMessage) and msg.name == "update_search_ui":
+                return "reporter"
+        return "retriever"
+
     workflow.add_conditional_edges("retriever", retriever_router, {
         "tools": "tools",
         "supervisor": "supervisor"
     })
-    workflow.add_edge("tools", "retriever")
+    workflow.add_conditional_edges("tools", tool_exit_router, {
+        "reflector": "reflector",
+        "reporter": "reporter",
+        "retriever": "retriever"
+    })
+    workflow.add_edge("reflector", "retriever")
     
     workflow.add_edge("reporter", END)
     workflow.add_edge("info_agent", END)
     workflow.add_edge("suggester", END)
 
-    return workflow.compile()
+    memory = MemorySaver()
+    return workflow.compile(checkpointer=memory)

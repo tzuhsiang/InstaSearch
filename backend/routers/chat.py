@@ -45,8 +45,10 @@ async def chat(req: ChatRequest):
         messages.append(HumanMessage(content=req.message))
 
         try:
+            config = {"configurable": {"thread_id": "default-session"}}
             async for event in router.agent_graph.astream_events(
                 {"messages": messages}, 
+                config=config,
                 version="v2"
             ):
                 kind = event["event"]
@@ -54,13 +56,15 @@ async def chat(req: ChatRequest):
                 
                 if kind == "on_chain_start":
                     if name == "supervisor":
-                        yield f"data: {json.dumps({'type': 'step', 'content': '👀 指揮官正在評估意圖...'})}\n\n"
+                        yield f"data: {json.dumps({'type': 'step', 'content': '👀 主管正在評估意圖...'})}\n\n"
                     elif name == "retriever":
-                        yield f"data: {json.dumps({'type': 'step', 'content': '🔍 準備抓取社群資料...'})}\n\n"
+                        yield f"data: {json.dumps({'type': 'step', 'content': '🔍 正在執行工具或調度資料...'})}\n\n"
                     elif name == "reporter":
-                        yield f"data: {json.dumps({'type': 'step', 'content': '✍️ 正在撰寫美食報告...'})}\n\n"
+                        yield f"data: {json.dumps({'type': 'step', 'content': '✍️ 正在撰寫回報內容...'})}\n\n"
                     elif name == "info_agent":
                         yield f"data: {json.dumps({'type': 'step', 'content': '🤖 系統專員正在解答...'})}\n\n"
+                    elif name == "reflector":
+                        yield f"data: {json.dumps({'type': 'step', 'content': '🛠️ 偵測到執行異常，正在自動修正重試...'})}\n\n"
 
                 if kind == "on_chat_model_stream":
                     chunk = event["data"]["chunk"]
@@ -74,8 +78,17 @@ async def chat(req: ChatRequest):
                         for tc in chunk.tool_call_chunks:
                             tool_name = tc.get("name")
                             if tool_name:
-                                payload = {'type': 'reasoning', 'content': f'🔧 準備呼叫工具: {tool_name}'}
+                                payload = {'type': 'reasoning', 'content': f'🔧 啟動工具: {tool_name}'}
                                 yield f"data: {json.dumps(payload)}\n\n"
+                
+                elif kind == "on_tool_start" and name == "update_search_ui":
+                    args = event["data"].get("input", {})
+                    payload = {
+                        "type": "ui_command",
+                        "command": "update_search",
+                        "params": args
+                    }
+                    yield f"data: {json.dumps(payload)}\n\n"
 
                 elif kind == "on_tool_end":
                     tool_name = event["name"]
